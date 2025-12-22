@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Фильмы</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    .movie { background: white; margin: 10px 0; padding: 12px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    h1 { color: #333; }
+  </style>
+</head>
+<body>
+  <h1>Список фильмов</h1>
+  <div id="movies"></div>
+
+  <script>
+    fetch('http://localhost:8000/api/movies/')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('movies');
+        if (!Array.isArray(data)) return;
+        data.forEach(movie => {
+          const el = document.createElement('div');
+          el.className = 'movie';
+          el.innerHTML = `<strong>${movie.title || movie.name || 'Без названия'}</strong><br>
+                          ${movie.description || ''}`;
+          container.appendChild(el);
+        });
+      })
+      .catch(err => {
+        document.getElementById('movies').innerHTML = '<p>Ошибка загрузки фильмов</p>';
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
