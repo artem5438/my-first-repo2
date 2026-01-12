@@ -33,18 +33,39 @@ async function loadMovies() {
         const response = await fetch('http://localhost:8000/api/movies/', {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
         });
-        const data = await response.json();
+        console.log('🚀 Ответ сервера:', response.status, response.statusText);
         
+        const data = await response.json();
         console.log('✅ Ответ API:', data);
         
-        // Может быть разная структура ответа
+        // Гибкая обработка ответа (как в movies.js)
         let movies = [];
         if (Array.isArray(data)) {
             movies = data;
-        } else if (data.results) {
-            movies = data.results;
-        } else if (data.movies) {
-            movies = data.movies;
+            console.log('Структура: массив, количество:', movies.length);
+        } else if (data && typeof data === 'object') {
+            if (data.results && Array.isArray(data.results)) {
+                movies = data.results;
+                console.log('Структура: .results, количество:', movies.length);
+            } else if (data.movies && Array.isArray(data.movies)) {
+                movies = data.movies;
+                console.log('Структура: .movies, количество:', movies.length);
+            } else if (data.data && Array.isArray(data.data)) {
+                movies = data.data;
+                console.log('Структура: .data, количество:', movies.length);
+            } else if (data.items && Array.isArray(data.items)) {
+                movies = data.items;
+                console.log('Структура: .items, количество:', movies.length);
+            } else {
+                // Попробуем найти первый массив в объекте
+                for (const key in data) {
+                    if (Array.isArray(data[key])) {
+                        movies = data[key];
+                        console.log(`Структура: .${key}, количество:`, movies.length);
+                        break;
+                    }
+                }
+            }
         }
         
         const list = document.getElementById('movies-list');
@@ -62,11 +83,24 @@ async function loadMovies() {
             
             const card = document.createElement('div');
             card.className = 'item-card';
+            
+            // Получаем правильное название постера
+            const posterUrl = movie.poster_url || movie.poster || movie.poster_image || '';
+            
+            // Получаем правильное название длительности
+            const duration = movie.duration || movie.duration_minutes || movie.runtime || 0;
+            
+            // Получаем правильное название рейтинга
+            const ageRating = movie.age_restriction || movie.age_rating || movie.rating || '0+';
+            
             card.innerHTML = `
+                <div class="movie-poster">
+                    ${posterUrl ? `<img src="${posterUrl}" alt="${movie.title || 'Без названия'}" style="width: 100%; height: 100%; object-fit: cover;">` : '🎬'}
+                </div>
                 <h4>${escapeHtml(movie.title || 'Без названия')}</h4>
                 <div class="item-meta">👤 ${escapeHtml(movie.director || 'Неизвестно')}</div>
-                <div class="item-meta">⏱️ ${movie.duration_minutes || 0} мин</div>
-                <div class="item-meta">🎯 ${movie.age_rating || '0+'}</div>
+                <div class="item-meta">⏱️ ${duration} мин</div>
+                <div class="item-meta">🎯 ${ageRating}</div>
                 <div class="item-actions">
                     <button class="btn-edit" onclick="editMovie(${movieId})">✏️ Редактировать</button>
                     <button class="btn-delete" onclick="deleteMovie(${movieId})">🗑️ Удалить</button>

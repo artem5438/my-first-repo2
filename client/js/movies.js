@@ -4,13 +4,18 @@
 
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Настройка кнопок входа/профиля и админ-панели (должно работать на всех страницах)
+  setupLoginButton();
+  setupAdminButton();
+
+  // Проверяем, что мы находимся на странице афиши
+  if (document.querySelector('.movies-section')) {
     console.log('DOM загружен, инициализация афиши...');
-    
     setupNavigation();
     setupModal();
-    setupLoginButton();
     setupFilters();
     loadAllMovies();
+  }
 });
 
 

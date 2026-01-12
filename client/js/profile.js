@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loadProfileData();
     loadUserTickets();
-    loadUserReservations(); //Не рабочая
 });
 
 
