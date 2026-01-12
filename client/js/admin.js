@@ -199,6 +199,10 @@ function setupFormHandlers() {
     movieForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Исправление: преобразуем пустые даты в null
+        const releaseDate = document.getElementById('movie-release-date').value || null;
+        const endDate = document.getElementById('movie-end-date').value || null;
+
         const movieData = {
             title: document.getElementById('movie-title').value,
             description: document.getElementById('movie-description').value,
@@ -206,8 +210,9 @@ function setupFormHandlers() {
             duration_minutes: parseInt(document.getElementById('movie-duration').value),
             age_rating: document.getElementById('movie-rating').value,
             poster_url: document.getElementById('movie-poster').value,
-            release_date: document.getElementById('movie-release-date').value,
-            end_date: document.getElementById('movie-end-date').value,
+            // Используем преобразованные значения
+            release_date: releaseDate,
+            end_date: endDate,
             is_active: true
         };
         
@@ -260,7 +265,7 @@ function setupFormHandlers() {
         }
     });
     
-    // СЕАНСЫ
+    // СЕАНСЫ (оставляем без изменений)
     const sessionForm = document.getElementById('session-form');
     sessionForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -279,7 +284,6 @@ function setupFormHandlers() {
             
             let response;
             if (sessionId && sessionId !== 'undefined') {
-                // РЕДАКТИРОВАНИЕ - PUT
                 response = await fetch(`http://localhost:8000/api/sessions/${sessionId}/`, {
                     method: 'PUT',
                     headers: {
@@ -289,7 +293,6 @@ function setupFormHandlers() {
                     body: JSON.stringify(sessionData)
                 });
             } else {
-                // СОЗДАНИЕ - POST к /create/
                 response = await fetch('http://localhost:8000/api/sessions/create/', {
                     method: 'POST',
                     headers: {
@@ -311,7 +314,7 @@ function setupFormHandlers() {
             showAlert(`❌ Ошибка: ${error.message}`, 'error');
         }
     });
-}
+} // 👈 ЭТОТ ЗАКРЫВАЮЩИЙ СКОБКА БЫЛ УПУЩЕН В ПРЕДЫДУЩЕМ ОТВЕТЕ
 
 // ===== РЕДАКТИРОВАНИЕ ФИЛЬМА =====
 async function editMovie(movieId) {
@@ -334,12 +337,15 @@ async function editMovie(movieId) {
         const movie = await response.json();
         console.log('✅ Фильм загружен:', movie);
         
+        // Установка значений с обработкой null → пустая строка
         document.getElementById('movie-title').value = movie.title || '';
         document.getElementById('movie-description').value = movie.description || '';
         document.getElementById('movie-director').value = movie.director || '';
         document.getElementById('movie-duration').value = movie.duration_minutes || '';
         document.getElementById('movie-rating').value = movie.age_rating || '';
         document.getElementById('movie-poster').value = movie.poster_url || '';
+        
+        // 🔑 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: преобразуем null в пустую строку для input[type="date"]
         document.getElementById('movie-release-date').value = movie.release_date || '';
         document.getElementById('movie-end-date').value = movie.end_date || '';
         

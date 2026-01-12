@@ -10,9 +10,12 @@ class MovieSerializer(serializers.ModelSerializer):
     genres = GenreSerializer(many=True, read_only=True)  
     poster_url = serializers.SerializerMethodField()
 
+    release_date = serializers.DateField(format="%Y-%m-%d", required=False)
+    end_date = serializers.DateField(format="%Y-%m-%d", required=False)
+    
     class Meta:
         model = Movie
-        fields = ['movie_id', 'title', 'director', 'genres', 'description', 'age_rating', 'duration_minutes', 'poster_url' ]
+        fields = ['movie_id', 'title', 'director', 'genres', 'description', 'age_rating', 'duration_minutes', 'release_date', 'end_date', 'poster_url' ]
 
     def get_poster_url(self, obj):
         if obj.poster_url:  
