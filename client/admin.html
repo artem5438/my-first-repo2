@@ -86,9 +86,12 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">URL Постера</label>
-                                <input type="url" id="movie-poster" class="form-input" placeholder="https://example.com/poster.jpg">
-                            </div>
+    <label class="form-label">Постер фильма</label>
+    <input type="file" id="movie-poster" class="form-input" accept="image/*">
+    <div id="poster-preview" style="margin-top: 1rem; display: none;">
+        <img id="poster-preview-img" style="max-width: 200px; border-radius: 6px;">
+    </div>
+</div>
                         </div>
 
                         <div class="form-row">
