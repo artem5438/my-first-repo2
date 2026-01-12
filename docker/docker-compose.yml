@@ -9,7 +9,7 @@ services:
       - "5430:5432" #Не "убиваем" СУБД Postgres, а занимает порт 5430
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ../db/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
 
 volumes:
   postgres_data:

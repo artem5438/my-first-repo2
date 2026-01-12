@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - НОРА Кинотеатр</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/login.css"
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🎬 НОРА</h1>
+                    <p>Кинотеатр</p>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="movies.html" class="nav-link">Афиша</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container">
+            <div class="auth-container">
+                <h2 style="text-align: center; color: var(--primary-color); margin: 0 0 1.5rem 0;">
+                    Вход в систему
+                </h2>
+                
+                <div id="error-message" class="error"></div>
+
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required placeholder="your@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Пароль</label>
+                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="btn-submit">Войти</button>
+                </form>
+
+                <div class="auth-link">
+                    Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="support-bar">
+        📧 Техническая поддержка: <a href="mailto:ivanivanich220111@gmail.com">support@nora-cinema.ru</a>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Кинотеатр НОРА. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

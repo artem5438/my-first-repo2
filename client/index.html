@@ -1,36 +1,97 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Фильмы</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-    .movie { background: white; margin: 10px 0; padding: 12px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    h1 { color: #333; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>НОРА - Кинотеатр</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>Список фильмов</h1>
-  <div id="movies"></div>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🎬 НОРА</h1>
+                    <p>Кинотеатр</p>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link active">Главная</a>
+                    <a href="movies.html" class="nav-link">Афиша</a>
+                    <a href="admin.html" id="admin-btn" class="nav-link" style="display: none;">⚙️ Админ</a>
+                    <button id="login-btn" class="btn-auth">Вход</button>
+                </nav>
+            </div>
+        </div>
+    </header>
 
-  <script>
-    fetch('http://localhost:8000/api/movies/')
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById('movies');
-        if (!Array.isArray(data)) return;
-        data.forEach(movie => {
-          const el = document.createElement('div');
-          el.className = 'movie';
-          el.innerHTML = `<strong>${movie.title || movie.name || 'Без названия'}</strong><br>
-                          ${movie.description || ''}`;
-          container.appendChild(el);
-        });
-      })
-      .catch(err => {
-        document.getElementById('movies').innerHTML = '<p>Ошибка загрузки фильмов</p>';
-        console.error(err);
-      });
-  </script>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <section class="hero">
+            <div class="container">
+                <h2>Добро пожаловать в кинотеатр НОРА</h2>
+                <p>Смотрите лучшие фильмы и зарабатывайте баллы!</p>
+                <a href="movies.html" class="btn-primary">Смотреть афишу</a>
+            </div>
+        </section>
+
+
+        <section class="features">
+            <div class="container">
+                <h3>Наши преимущества</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h4>🎟️ Онлайн билеты</h4>
+                        <p>Купите билеты прямо из дома</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⭐ Система баллов</h4>
+                        <p>Зарабатывайте баллы за каждый купленный билет</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🎬 Большой выбор</h4>
+                        <p>Новинки и классика кинематографа</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📱 Мобильная версия</h4>
+                        <p>Смотрите с телефона и компьютера</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ПОПУЛЯРНЫЕ ФИЛЬМЫ -->
+        <section class="popular-movies">
+            <div class="container">
+                <h3>Сейчас в кино</h3>
+                <div class="movies-list" id="popular-movies">
+                    <!-- Карточки фильмов загружаются динамически -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Кинотеатр НОРА. Все права защищены.</p>
+        </div>
+    </footer>
+
+
+    <!-- МОДАЛЬНОЕ ОКНО -->
+    <div id="movie-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

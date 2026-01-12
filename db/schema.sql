@@ -1,27 +1,5 @@
--- ============================================
--- ПРОЕКТ "НОРА" - СИСТЕМА УПРАВЛЕНИЯ КИНОТЕАТРОМ
--- Физическая модель БД (PostgreSQL)
--- ============================================
--- Версия: 1.0
--- Дата: 17 декабря 2025 г.
--- ============================================
 
--- ПОДГОТОВКА: ОЧИСТКА (Если БД уже существует)
--- DROP DATABASE IF EXISTS nora_db;
-
--- СОЗДАНИЕ БД
---CREATE DATABASE nora_db
---  ENCODING 'UTF8'
---  TEMPLATE template0
---  LC_COLLATE 'en_US.UTF-8'
---  LC_CTYPE 'en_US.UTF-8';
-
--- ПОДКЛЮЧЕНИЕ К БД
--- \c nora_db
-
--- ============================================
 -- ТАБЛИЦА 1: ПОЛЬЗОВАТЕЛИ (USERS)
--- ============================================
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -45,9 +23,7 @@ COMMENT ON COLUMN users.email IS 'Уникальный email для входа';
 COMMENT ON COLUMN users.password_hash IS 'Хеш пароля (bcrypt)';
 COMMENT ON COLUMN users.birth_date IS 'Дата рождения для проверки возраста';
 
--- ============================================
 -- ТАБЛИЦА 2: ЖАНРЫ ФИЛЬМОВ (GENRES)
--- ============================================
 CREATE TABLE genres (
     genre_id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
@@ -58,9 +34,7 @@ CREATE INDEX idx_genres_name ON genres(name);
 
 COMMENT ON TABLE genres IS 'Жанры фильмов (боевик, комедия и т.д.)';
 
--- ============================================
 -- ТАБЛИЦА 3: ФИЛЬМЫ (MOVIES)
--- ============================================
 CREATE TABLE movies (
     movie_id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -89,16 +63,14 @@ COMMENT ON TABLE movies IS 'Информация о фильмах в прока
 COMMENT ON COLUMN movies.age_rating IS 'Возрастное ограничение (0+, 6+, 12+, 16+, 18+)';
 COMMENT ON COLUMN movies.duration_minutes IS 'Продолжительность фильма в минутах';
 
--- ============================================
 -- ТАБЛИЦА 4: СВЯЗЬ ФИЛЬМ-ЖАНР (MOVIE_GENRES)
--- ============================================
 CREATE TABLE movie_genres (
+    id SERIAL PRIMARY KEY, 
     movie_id INT NOT NULL,
     genre_id INT NOT NULL,
-    
-    PRIMARY KEY (movie_id, genre_id),
     FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE,
-    FOREIGN KEY (genre_id) REFERENCES genres(genre_id) ON DELETE CASCADE
+    FOREIGN KEY (genre_id) REFERENCES genres(genre_id) ON DELETE CASCADE,
+    UNIQUE (movie_id, genre_id)
 );
 
 CREATE INDEX idx_movie_genres_movie_id ON movie_genres(movie_id);
@@ -106,9 +78,7 @@ CREATE INDEX idx_movie_genres_genre_id ON movie_genres(genre_id);
 
 COMMENT ON TABLE movie_genres IS 'Связь Many-to-Many между фильмами и жанрами';
 
--- ============================================
 -- ТАБЛИЦА 5: ЗАЛЫ КИНОТЕАТРА (HALLS)
--- ============================================
 CREATE TABLE halls (
     hall_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -126,9 +96,7 @@ CREATE INDEX idx_halls_is_active ON halls(is_active);
 COMMENT ON TABLE halls IS 'Залы кинотеатра (максимум 5 залов)';
 COMMENT ON COLUMN halls.capacity IS 'Количество мест в зале (обычно 50)';
 
--- ============================================
 -- ТАБЛИЦА 6: МЕСТА В ЗАЛАХ (SEATS)
--- ============================================
 CREATE TABLE seats (
     seat_id SERIAL PRIMARY KEY,
     hall_id INT NOT NULL,
@@ -151,9 +119,7 @@ COMMENT ON TABLE seats IS 'Места в залах (ряд A-E, места 1-10
 COMMENT ON COLUMN seats.row_number IS 'Ряд (A, B, C, D, E)';
 COMMENT ON COLUMN seats.seat_number IS 'Номер места в ряду (1-10)';
 
--- ============================================
 -- ТАБЛИЦА 7: СЕАНСЫ (SESSIONS)
--- ============================================
 CREATE TABLE sessions (
     session_id SERIAL PRIMARY KEY,
     movie_id INT NOT NULL,
@@ -181,9 +147,7 @@ COMMENT ON TABLE sessions IS 'Сеансы показа фильмов (обыч
 COMMENT ON COLUMN sessions.session_datetime IS 'Дата и время начала сеанса (18:00, 21:00)';
 COMMENT ON COLUMN sessions.available_seats IS 'Количество свободных мест на момент создания';
 
--- ============================================
 -- ТАБЛИЦА 8: СОСТОЯНИЕ МЕСТ НА СЕАНС (SESSION_SEATS)
--- ============================================
 CREATE TABLE session_seats (
     session_seat_id SERIAL PRIMARY KEY,
     session_id INT NOT NULL,
@@ -207,9 +171,8 @@ CREATE INDEX idx_session_seats_status ON session_seats(status);
 COMMENT ON TABLE session_seats IS 'Состояние каждого места на конкретный сеанс';
 COMMENT ON COLUMN session_seats.status IS 'Статус места: free (свободно), reserved (зарезервировано), sold (продано), cancelled (отменено)';
 
--- ============================================
+
 -- ТАБЛИЦА 9: ЗАКАЗЫ (ORDERS)
--- ============================================
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -231,9 +194,8 @@ COMMENT ON TABLE orders IS 'Заказы билетов (покупки)';
 COMMENT ON COLUMN orders.total_price IS 'Общая сумма заказа (в рублях)';
 COMMENT ON COLUMN orders.order_status IS 'Статус заказа';
 
--- ============================================
+
 -- ТАБЛИЦА 10: БИЛЕТЫ (TICKETS)
--- ============================================
 CREATE TABLE tickets (
     ticket_id SERIAL PRIMARY KEY,
     order_id INT NOT NULL,
@@ -261,9 +223,7 @@ COMMENT ON TABLE tickets IS 'Проданные билеты';
 COMMENT ON COLUMN tickets.qr_code IS 'Уникальный QR-код для входа в кинотеатр';
 COMMENT ON COLUMN tickets.ticket_status IS 'Статус билета: valid (действителен), used (использован), cancelled (отменен)';
 
--- ============================================
 -- ТАБЛИЦА 11: ОТМЕНЫ БИЛЕТОВ (CANCELLATIONS)
--- ============================================
 CREATE TABLE cancellations (
     cancellation_id SERIAL PRIMARY KEY,
     ticket_id INT NOT NULL UNIQUE,
@@ -282,9 +242,7 @@ COMMENT ON TABLE cancellations IS 'История отмен билетов';
 COMMENT ON COLUMN cancellations.reason IS 'Причина отмены';
 COMMENT ON COLUMN cancellations.refunded_points IS 'Количество возвращённых баллов';
 
--- ============================================
 -- ТАБЛИЦА 12: БАЛАНС БАЛЛОВ ПОЛЬЗОВАТЕЛЯ (USER_POINTS_BALANCE)
--- ============================================
 CREATE TABLE user_points_balance (
     balance_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
@@ -300,9 +258,8 @@ CREATE INDEX idx_user_points_balance_user_id ON user_points_balance(user_id);
 COMMENT ON TABLE user_points_balance IS 'Текущий баланс баллов для каждого пользователя';
 COMMENT ON COLUMN user_points_balance.current_points IS 'Текущее количество баллов (10 баллов за 100 рублей)';
 
--- ============================================
+
 -- ТАБЛИЦА 13: ИСТОРИЯ БАЛЛОВ (POINTS_TRANSACTIONS)
--- ============================================
 CREATE TABLE points_transactions (
     transaction_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -329,9 +286,7 @@ COMMENT ON TABLE points_transactions IS 'История всех операци�
 COMMENT ON COLUMN points_transactions.operation_type IS 'Тип операции: earn (начисление), spend (трата), expire (сгорание), refund (возврат)';
 COMMENT ON COLUMN points_transactions.expiry_date IS 'Дата истечения баллов (обычно +1 месяц от даты получения)';
 
--- ============================================
 -- ПРЕДСТАВЛЕНИЯ (VIEWS) ДЛЯ АНАЛИТИКИ
--- ============================================
 
 -- VIEW 1: ПОПУЛЯРНЫЕ ФИЛЬМЫ
 CREATE VIEW view_popular_movies AS
@@ -430,9 +385,7 @@ ORDER BY cancellation_date DESC;
 
 COMMENT ON VIEW view_cancellation_stats IS 'Статистика отмен билетов';
 
--- ============================================
 -- ТРИГГЕРЫ
--- ============================================
 
 -- ТРИГГЕР 1: Автоматическое обновление updated_at в users
 CREATE OR REPLACE FUNCTION update_users_timestamp()
@@ -506,9 +459,9 @@ BEFORE UPDATE ON user_points_balance
 FOR EACH ROW
 EXECUTE FUNCTION update_points_balance_timestamp();
 
--- ============================================
+
 -- ФУНКЦИИ (FUNCTIONS)
--- ============================================
+
 
 -- ФУНКЦИЯ 1: Расчет возраста пользователя
 CREATE OR REPLACE FUNCTION calculate_user_age(birth_date DATE)
@@ -592,29 +545,4 @@ $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION can_cancel_ticket(INT) IS 'Проверяет, может ли быть отменен билет (за 30 минут до начала)';
 
--- ============================================
--- ПОСЛЕДОВАТЕЛЬНОСТИ (SEQUENCES) - Для резервного копирования
--- ============================================
-
--- Проверка статуса всех SERIAL ID (они создаются автоматически)
--- SELECT * FROM information_schema.sequences WHERE sequence_schema = 'public';
-
--- ============================================
--- ФИНАЛЬНЫЕ КОММЕНТАРИИ К СХЕМЕ
--- ============================================
-
 COMMENT ON SCHEMA public IS 'Схема для проекта "НОРА" - система управления кинотеатром';
-
--- ============================================
--- ИНФОРМАЦИЯ О ВЕРСИИ БД
--- ============================================
--- Создано: 17 декабря 2025 г.
--- СУБД: PostgreSQL 12+
--- Кодировка: UTF-8
--- Таблиц: 13
--- Представлений: 5
--- Функций: 5
--- Триггеров: 5
--- ============================================
-
--- Конец скрипта

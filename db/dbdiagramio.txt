@@ -1,0 +1,242 @@
+// ============================================
+// ПРОЕКТ "НОРА" - КИНОТЕАТР
+// DbDiagram.io схема
+// ============================================
+
+// Таблица 1: ПОЛЬЗОВАТЕЛИ
+Table users {
+  user_id int [primary key, increment]
+  email varchar [unique, not null]
+  password_hash varchar [not null]
+  full_name varchar [not null]
+  phone varchar
+  birth_date date [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    email [unique]
+    birth_date
+  }
+}
+
+// Таблица 2: ЖАНРЫ ФИЛЬМОВ
+Table genres {
+  genre_id int [primary key, increment]
+  name varchar [unique, not null]
+  description text
+}
+
+// Таблица 3: ФИЛЬМЫ
+Table movies {
+  movie_id int [primary key, increment]
+  title varchar [not null]
+  description text
+  director varchar
+  duration_minutes int [not null]
+  age_rating varchar [not null, note: "0+, 6+, 12+, 16+, 18+"]
+  release_date date
+  end_date date
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  genres varchar 
+  poster_url image
+  
+  indexes {
+    is_active
+    age_rating
+    title
+  }
+}
+
+// Таблица 4: СВЯЗЬ ФИЛЬМ-ЖАНР (MANY-TO-MANY)
+Table movie_genres {
+  movie_id int [primary key, not null]
+  genre_id int [primary key, not null]
+  
+  indexes {
+    movie_id
+    genre_id
+  }
+}
+
+// Таблица 5: ЗАЛЫ КИНОТЕАТРА
+Table halls {
+  hall_id int [primary key, increment]
+  name varchar [not null]
+  capacity int [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    name
+  }
+}
+
+// Таблица 6: МЕСТА В ЗАЛАХ
+Table seats {
+  seat_id int [primary key, increment]
+  hall_id int [not null]
+  row_number char [not null, note: "A, B, C, D, E"]
+  seat_number int [not null]
+  seat_type varchar [default: "standard", note: "standard, vip, disability"]
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    (hall_id, row_number, seat_number) [unique]
+    hall_id
+  }
+}
+
+// Таблица 7: СЕАНСЫ
+Table sessions {
+  session_id int [primary key, increment]
+  movie_id int [not null]
+  hall_id int [not null]
+  session_datetime timestamp [not null]
+  end_datetime timestamp [not null]
+  available_seats int [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  price decimal [not null]
+
+  indexes {
+    movie_id
+    hall_id
+    session_datetime
+    is_active
+  }
+}
+
+// Таблица 8: СОСТОЯНИЕ МЕСТ НА СЕАНС
+Table session_seats {
+  session_seat_id int [primary key, increment]
+  session_id int [not null]
+  seat_id int [not null]
+  status varchar [default: "free", note: "free, reserved, sold, cancelled"]
+  reserved_at timestamp
+  sold_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    (session_id, seat_id) [unique]
+    session_id
+    seat_id
+    status
+  }
+}
+
+// Таблица 9: ЗАКАЗЫ
+Table orders {
+  order_id int [primary key, increment]
+  user_id int [not null]
+  total_price decimal [not null]
+  order_status varchar [default: "completed", note: "pending, completed, cancelled"]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id
+    order_status
+    created_at
+  }
+}
+
+// Таблица 10: БИЛЕТЫ
+Table tickets {
+  ticket_id int [primary key, increment]
+  order_id int [not null]
+  session_id int [not null]
+  seat_id int [not null]
+  qr_code varchar [unique]
+  ticket_status varchar [default: "valid", note: "valid, used, cancelled"]
+  is_valid boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  
+  indexes {
+    order_id
+    session_id
+    seat_id
+    qr_code
+    ticket_status
+  }
+}
+
+// Таблица 11: ОТМЕНЫ БИЛЕТОВ
+Table cancellations {
+  cancellation_id int [primary key, increment]
+  ticket_id int [not null, unique]
+  cancelled_at timestamp [default: `now()`]
+  reason varchar
+  refunded_points int
+  
+  indexes {
+    ticket_id
+    cancelled_at
+  }
+}
+
+// Таблица 12: БАЛАНС БАЛЛОВ ПОЛЬЗОВАТЕЛЯ
+Table user_points_balance {
+  balance_id int [primary key, increment]
+  user_id int [not null, unique]
+  current_points int [default: 0]
+  last_updated timestamp [default: `now()`]
+  
+  indexes {
+    user_id
+  }
+}
+
+// Таблица 13: ИСТОРИЯ БАЛЛОВ
+Table points_transactions {
+  transaction_id int [primary key, increment]
+  user_id int [not null]
+  order_id int
+  points_amount int [not null]
+  operation_type varchar [not null, note: "earn, spend, expire, refund"]
+  expiry_date date
+  description varchar
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id
+    order_id
+    operation_type
+    created_at
+  }
+}
+
+// ============================================
+// СВЯЗИ (RELATIONSHIPS)
+// ============================================
+
+Ref: movie_genres.movie_id > movies.movie_id [delete: cascade]
+Ref: movie_genres.genre_id > genres.genre_id [delete: cascade]
+
+Ref: seats.hall_id > halls.hall_id [delete: cascade]
+
+Ref: sessions.movie_id > movies.movie_id [delete: restrict]
+Ref: sessions.hall_id > halls.hall_id [delete: restrict]
+
+Ref: session_seats.session_id > sessions.session_id [delete: cascade]
+Ref: session_seats.seat_id > seats.seat_id [delete: cascade]
+
+Ref: orders.user_id > users.user_id [delete: restrict]
+
+Ref: tickets.order_id > orders.order_id [delete: cascade]
+Ref: tickets.session_id > sessions.session_id [delete: restrict]
+Ref: tickets.seat_id > seats.seat_id [delete: restrict]
+
+Ref: cancellations.ticket_id > tickets.ticket_id [delete: cascade]
+
+Ref: user_points_balance.user_id > users.user_id [delete: cascade]
+
+Ref: points_transactions.user_id > users.user_id [delete: cascade]
+Ref: points_transactions.order_id > orders.order_id [delete: set null]

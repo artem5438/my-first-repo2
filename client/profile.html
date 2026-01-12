@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - НОРА Кинотеатр</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🎬 НОРА</h1>
+                    <p>Кинотеатр</p>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="movies.html" class="nav-link">Афиша</a>
+                    <a href="admin.html" id="admin-btn" class="nav-link" style="display: none;">⚙️ Админ</a>
+                    <a href="profile.html" class="nav-link active">Профиль</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container">
+            <div class="profile-container">
+                <!-- ЗАГОЛОВОК -->
+                <div class="profile-header">
+                    <h2 class="profile-title">Мой профиль</h2>
+                    <button class="profile-logout" onclick="logout()">Выход</button>
+                </div>
+
+
+                <!-- ИНФОРМАЦИЯ ПРОФИЛЯ -->
+                <div class="profile-info">
+                    <div class="profile-info-item">
+                        <div class="profile-info-label">Имя</div>
+                        <div class="profile-info-value" id="profile-name">-</div>
+                    </div>
+                    <div class="profile-info-item">
+                        <div class="profile-info-label">Email</div>
+                        <div class="profile-info-value" id="profile-email">-</div>
+                    </div>
+                    <div class="profile-info-item">
+                        <div class="profile-info-label">Телефон</div>
+                        <div class="profile-info-value" id="profile-phone">-</div>
+                    </div>
+                    <div class="profile-info-item">
+                        <div class="profile-info-label">Дата рождения</div>
+                        <div class="profile-info-value" id="profile-birth">-</div>
+                    </div>
+                    <div class="profile-points">
+                        <div class="profile-points-label">💎 Мои баллы</div>
+                        <div class="profile-points-value" id="profile-points">0</div>
+                    </div>
+                </div>
+
+
+                <!-- ВКЛАДКИ -->
+                <div class="tabs-container">
+                    <div class="tabs-header">
+                        <button class="tab-btn active" onclick="switchTab('tickets')">
+                            🎟️ Купленные билеты
+                        </button>
+                    </div>
+
+
+                    <!-- ВКЛ. 1: КУПЛЕННЫЕ БИЛЕТЫ -->
+                    <div id="tickets-tab" class="tab-content active">
+                        <div id="tickets-loading" class="loading-message" style="display: none;">
+                            <span class="spinner"></span>Загрузка билетов...
+                        </div>
+                        <div id="tickets-error" class="error-message" style="display: none;"></div>
+                        <div id="tickets-empty" class="empty-state" style="display: none;">
+                            <div class="empty-state-icon">🎫</div>
+                            <div class="empty-state-text">У вас пока нет билетов</div>
+                            <div class="empty-state-subtext">Посетите афишу и купите билет на интересующий вас фильм</div>
+                        </div>
+                        <div id="tickets-list" class="tickets-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="support-bar">
+    📧 Техническая поддержка: <a href="mailto:ivanivanich220111@gmail.com">support@nora-cinema.ru</a>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Кинотеатр НОРА. Все права защищены.</p>
+        </div>
+    </footer>
+
+
+    <script src="js/api.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>

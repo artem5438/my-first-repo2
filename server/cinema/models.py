@@ -27,6 +27,14 @@ class Hall(models.Model):
         managed = False
         db_table = 'halls'
 
+class Genre(models.Model):
+    genre_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'genres'
 
 class Movie(models.Model):
     movie_id = models.AutoField(primary_key=True)
@@ -40,6 +48,12 @@ class Movie(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    genres = models.ManyToManyField(
+        Genre,
+        through='MovieGenre',  # Используем промежуточную таблицу
+        related_name='movies'
+    )
+    poster_url = models.ImageField(upload_to='posters/', blank=True, null=True)
 
     class Meta:
         managed = False
@@ -56,23 +70,15 @@ class Session(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=False, blank=True)
 
     class Meta:
         managed = False
         db_table = 'sessions'
 
 
-class Genre(models.Model):
-    genre_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'genres'
-
-
 class MovieGenre(models.Model):
+    id = models.AutoField(primary_key=True)  
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, db_column='movie_id')
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, db_column='genre_id')
 

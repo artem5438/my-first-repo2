@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Афиша - НОРА Кинотеатр</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🎬 НОРА</h1>
+                    <p>Кинотеатр</p>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="movies.html" class="nav-link active">Афиша</a>
+                    <a href="admin.html" id="admin-btn" class="nav-link" style="display: none;">⚙️ Админ</a>
+                    <button id="login-btn" class="btn-auth">Вход</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <section class="movies-section">
+            <div class="container">
+                <h2>Афиша фильмов</h2>
+
+                <!-- ФИЛЬТРЫ -->
+                <div class="filters">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Поиск по названию..." 
+                        class="search-input"
+                    >
+                    <select id="rating-filter" class="filter-select">
+                        <option value="">Все возрастные рейтинги</option>
+                        <option value="0+">0+</option>
+                        <option value="6+">6+</option>
+                        <option value="12+">12+</option>
+                        <option value="16+">16+</option>
+                        <option value="18+">18+</option>
+                    </select>
+                </div>
+
+                <!-- ГОРИЗОНТАЛЬНАЯ ЛЕНТА ФИЛЬМОВ -->
+                <div class="movies-carousel-container">
+                    <div class="movies-carousel-wrapper" id="movies-list">
+                        <!-- Фильмы загружаются динамически -->
+                    </div>
+                </div>
+
+                
+                <!-- СООБЩЕНИЯ -->
+                <div id="loading-message" class="empty-message" style="display: none;">
+                    <p>Загрузка фильмов...</p>
+                </div>
+                
+                <div id="empty-message" class="empty-message" style="display: none;">
+                    <p>Фильмы не найдены</p>
+                </div>
+
+                <div id="error-message" class="error-message" style="display: none;"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Кинотеатр НОРА. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <!-- МОДАЛЬНОЕ ОКНО -->
+    <div id="movie-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/movies.js"></script>
+</body>
+</html>

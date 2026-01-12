@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>НОРА - Админ Панель</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🎬 НОРА</h1>
+                    <p>Кинотеатр</p>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="movies.html" class="nav-link">Афиша</a>
+                    <a href="admin.html" class="nav-link active">⚙️ Админ</a>
+                    <button id="login-btn" class="btn-auth">Профиль</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-container" style="padding: 2rem 0; max-width: 1400px; margin: 0 auto;">
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+            <h3>⚙️ Админ Панель</h3>
+            <div class="admin-menu">
+                <button class="admin-menu-btn active" onclick="switchAdminTab('movies')">
+                    🎬 Фильмы
+                </button>
+                <button class="admin-menu-btn" onclick="switchAdminTab('sessions')">
+                    🎫 Сеансы
+                </button>
+            </div>
+        </aside>
+
+        <!-- CONTENT -->
+        <section class="admin-content">
+            <!-- MOVIES SECTION -->
+            <div id="movies-section" class="admin-section active">
+                <h2 class="section-title">Управление Фильмами</h2>
+
+                <!-- ADD/EDIT FORM -->
+                <div style="background: #f9fafb; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+                    <h3 style="margin-top: 0; color: #1e3a8a;">Добавить/Редактировать фильм</h3>
+                    
+                    <form id="movie-form">
+                        <div class="form-group">
+                            <label class="form-label">Название фильма</label>
+                            <input type="text" id="movie-title" class="form-input" placeholder="Введите название" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Описание</label>
+                            <textarea id="movie-description" class="form-textarea" placeholder="Введите описание фильма"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Режиссер</label>
+                                <input type="text" id="movie-director" class="form-input" placeholder="Введите имя режиссера">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Длительность (мин)</label>
+                                <input type="number" id="movie-duration" class="form-input" placeholder="Например: 120" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Рейтинг по возрасту</label>
+                                <select id="movie-rating" class="form-select" required>
+                                    <option value="">Выберите рейтинг</option>
+                                    <option value="0+">0+</option>
+                                    <option value="6+">6+</option>
+                                    <option value="12+">12+</option>
+                                    <option value="16+">16+</option>
+                                    <option value="18+">18+</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">URL Постера</label>
+                                <input type="url" id="movie-poster" class="form-input" placeholder="https://example.com/poster.jpg">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Дата начала показа</label>
+                                <input type="date" id="movie-release-date" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Дата окончания показа</label>
+                                <input type="date" id="movie-end-date" class="form-input">
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit" class="btn-submit">💾 Сохранить фильм</button>
+                            <button type="reset" class="btn-reset" onclick="resetMovieForm()">🔄 Очистить</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- MOVIES LIST -->
+                <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Список фильмов</h3>
+                <div id="movies-list" class="movies-list">
+                    <div class="loading">Загрузка фильмов...</div>
+                </div>
+            </div>
+
+            <!-- SESSIONS SECTION -->
+            <div id="sessions-section" class="admin-section">
+                <h2 class="section-title">Управление Сеансами</h2>
+
+                <!-- ADD/EDIT FORM -->
+                <div style="background: #f9fafb; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+                    <h3 style="margin-top: 0; color: #1e3a8a;">Добавить/Редактировать сеанс</h3>
+                    
+                    <form id="session-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Фильм</label>
+                                <select id="session-movie" class="form-select" required>
+                                    <option value="">Выберите фильм</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Зал</label>
+                                <select id="session-hall" class="form-select" required>
+                                    <option value="">Выберите зал</option>
+                                    <option value="1">Зал 1</option>
+                                    <option value="2">Зал 2</option>
+                                    <option value="3">Зал 3</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Дата и время начала</label>
+                                <input type="datetime-local" id="session-start" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Дата и время окончания</label>
+                                <input type="datetime-local" id="session-end" class="form-input" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit" class="btn-submit">💾 Сохранить сеанс</button>
+                            <button type="reset" class="btn-reset" onclick="resetSessionForm()">🔄 Очистить</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SESSIONS LIST -->
+                <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Список сеансов</h3>
+                <div id="sessions-list" class="sessions-list">
+                    <div class="loading">Загрузка сеансов...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Кинотеатр НОРА. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

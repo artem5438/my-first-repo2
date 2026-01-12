@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация - НОРА Кинотеатр</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/register.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🎬 НОРА</h1>
+                    <p>Кинотеатр</p>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="movies.html" class="nav-link">Афиша</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container">
+            <div class="auth-container">
+                <h2 style="text-align: center; color: var(--primary-color); margin: 0 0 1.5rem 0;">
+                    Создать аккаунт
+                </h2>
+                
+                <div id="error-message" class="error"></div>
+                <div id="success-message" class="success"></div>
+
+                <form id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="full_name">Полное имя</label>
+                        <input type="text" id="full_name" name="full_name" required placeholder="Иван Иванов">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required placeholder="your@email.com">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Телефон (опционально)</label>
+                            <input type="tel" id="phone" name="phone" placeholder="+7 (999) 000-00-00">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="birth_date">Дата рождения</label>
+                            <input type="date" id="birth_date" name="birth_date" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Пароль</label>
+                        <input type="password" id="password" name="password" required placeholder="Минимум 6 символов" minlength="6">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password_confirm">Подтверждение пароля</label>
+                        <input type="password" id="password_confirm" name="password_confirm" required placeholder="Повторите пароль" minlength="6">
+                    </div>
+
+                    <button type="submit" class="btn-submit">Зарегистрироваться</button>
+                </form>
+
+                <div class="auth-link">
+                    Уже есть аккаунт? <a href="login.html">Войти</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Кинотеатр НОРА. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
