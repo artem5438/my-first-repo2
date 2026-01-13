@@ -1,9 +1,7 @@
-// client/js/admin.js — ИСПРАВЛЕННАЯ ВЕРСИЯ
-
 document.addEventListener('DOMContentLoaded', async () => {
     const isAuth = localStorage.getItem('auth_token');
     const userEmail = localStorage.getItem('user_email');
-
+    
     if (!isAuth || userEmail !== 'root@root.com') {
         window.location.href = 'login.html';
         return;
@@ -38,6 +36,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSessions();
     populateMovieSelect();
     setupFormHandlers();
+    
+    // Обработчик предпросмотра изображения
+    const posterInput = document.getElementById('movie-poster');
+    if (posterInput) {
+        posterInput.addEventListener('change', function() {
+            const preview = document.getElementById('poster-preview');
+            const previewImg = document.getElementById('poster-preview-img');
+            
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+    }
 });
 
 // ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
@@ -222,10 +242,11 @@ function setupFormHandlers() {
     movieForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Исправленная обработка дат
         const releaseDate = document.getElementById('movie-release-date').value || null;
         const endDate = document.getElementById('movie-end-date').value || null;
 
-        // ✅ СОЗДАЕМ FormData вместо JSON
+        // Создаем FormData для загрузки файлов
         const formData = new FormData();
         formData.append('title', document.getElementById('movie-title').value);
         formData.append('description', document.getElementById('movie-description').value);
@@ -234,9 +255,9 @@ function setupFormHandlers() {
         formData.append('age_rating', document.getElementById('movie-rating').value);
         formData.append('release_date', releaseDate);
         formData.append('end_date', endDate);
-        formData.append('is_active', 'true');  // Булево в виде строки
-
-        // ✅ ДОБАВЛЯЕМ ФАЙЛ ПОСТЕРА
+        formData.append('is_active', 'true');
+        
+        // Добавляем файл постера, если он выбран
         const posterInput = document.getElementById('movie-poster');
         if (posterInput.files && posterInput.files[0]) {
             formData.append('poster_url', posterInput.files[0]);
@@ -248,18 +269,20 @@ function setupFormHandlers() {
             
             let response;
             if (movieId && movieId !== 'undefined') {
+                // РЕДАКТИРОВАНИЕ - PUT запрос
                 response = await fetch(`http://localhost:8000/api/movies/${movieId}/`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${token}`  // ✅ УДАЛЕН Content-Type!
+                        'Authorization': `Bearer ${token}`
                     },
                     body: formData
                 });
             } else {
+                // СОЗДАНИЕ - POST запрос
                 response = await fetch('http://localhost:8000/api/movies/create/', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`  // ✅ УДАЛЕН Content-Type!
+                        'Authorization': `Bearer ${token}`
                     },
                     body: formData
                 });
@@ -281,9 +304,58 @@ function setupFormHandlers() {
             showAlert(`❌ Ошибка: ${error.message}`, 'error');
         }
     });
-
-    // ... остальной код для сеансов (без изменений) ...
+    
+    // СЕАНСЫ
+    const sessionForm = document.getElementById('session-form');
+    sessionForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const sessionData = {
+            movie_id: parseInt(document.getElementById('session-movie').value),
+            hall_id: parseInt(document.getElementById('session-hall').value),
+            session_datetime: document.getElementById('session-start').value,
+            end_datetime: document.getElementById('session-end').value,
+            is_active: true
+        };
+        
+        try {
+            const sessionId = sessionForm.dataset.sessionId;
+            const token = localStorage.getItem('auth_token');
+            
+            let response;
+            if (sessionId && sessionId !== 'undefined') {
+                response = await fetch(`http://localhost:8000/api/sessions/${sessionId}/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(sessionData)
+                });
+            } else {
+                response = await fetch('http://localhost:8000/api/sessions/create/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(sessionData)
+                });
+            }
+            
+            if (!response.ok) throw new Error(`Ошибка ${response.status}`);
+            
+            showAlert(sessionId ? '✅ Сеанс обновлен!' : '✅ Сеанс добавлен!', 'success');
+            sessionForm.reset();
+            delete sessionForm.dataset.sessionId;
+            loadSessions();
+        } catch (error) {
+            console.error('❌ Ошибка:', error);
+            showAlert(`❌ Ошибка: ${error.message}`, 'error');
+        }
+    });
 }
+
 // ===== РЕДАКТИРОВАНИЕ ФИЛЬМА =====
 async function editMovie(movieId) {
     if (!movieId || movieId === 'undefined') {
@@ -311,7 +383,6 @@ async function editMovie(movieId) {
         document.getElementById('movie-director').value = movie.director || '';
         document.getElementById('movie-duration').value = movie.duration_minutes || '';
         document.getElementById('movie-rating').value = movie.age_rating || '';
-        document.getElementById('movie-poster').value = movie.poster_url || '';
         
         // 🔑 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: преобразуем null в пустую строку для input[type="date"]
         document.getElementById('movie-release-date').value = movie.release_date || '';
