@@ -10,8 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUserTickets();
 });
 
-
-
 // ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
 function switchTab(tabName) {
     // Скрыть все вкладки

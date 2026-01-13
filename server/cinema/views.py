@@ -6,13 +6,18 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 from datetime import datetime, timedelta
 import json
 import qrcode
 import uuid
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A5
+from reportlab.lib.utils import ImageReader
 from io import BytesIO
+import io
+import os
 
 
 from .models import (
@@ -46,6 +51,21 @@ class SessionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(movie_id=movie_id)
         return queryset
 
+ADMIN_PASSWORD = os.getenv('ADMIN_PANEL_PASSWORD')
+
+@csrf_exempt
+@api_view(['POST'])
+def admin_login_check(request):
+    """Проверка пароля для доступа к админке"""
+    try:
+        data = json.loads(request.body)
+        password = data.get('password')
+        if password == ADMIN_PASSWORD:
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'error': 'Неверный пароль'}, status=403)
+    except Exception:
+        return JsonResponse({'error': 'Ошибка запроса'}, status=400)
 
 
 # ==================== СТАРЫЕ VIEWS (для остального функционала) ====================
@@ -378,43 +398,71 @@ def qr_code_image(request, qr_code):
     # Возвращаем как файл через DRF
     return HttpResponse(buffer.getvalue(), content_type="image/png")
 
-# Генерация pdf-версии билета
-
 @api_view(['GET'])
 def ticket_pdf(request, qr_code):
+    django_request = request._request
+
     try:
-        ticket = Ticket.objects.get(qr_code=qr_code)
+        ticket = Ticket.objects.select_related('session__movie', 'seat').get(qr_code=qr_code)
     except Ticket.DoesNotExist:
-        return Response({'error': 'Билет не найден'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
 
-
-    # Генерация простого PDF
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A5)
+    # Используем io.BytesIO явно
+    pdf_buffer = io.BytesIO()
+    p = canvas.Canvas(pdf_buffer, pagesize=A5)
     width, height = A5
 
-
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, height - 50, "CINEMA TICKET")
-
+    # === Оформление ===
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(50, height - 60, "NORA CINEMA TICKET")
+    p.rect(40, height - 75, width - 80, 30, fill=0)
+    p.line(40, height - 85, width - 40, height - 85)
 
     p.setFont("Helvetica", 12)
-    p.drawString(50, height - 80, f"Movie: {ticket.session.movie.title}")
-    p.drawString(50, height - 100, f"Date: {ticket.session.session_datetime.strftime('%d.%m.%Y %H:%M')}")
-    p.drawString(50, height - 120, f"Seat: Row {ticket.seat.row_number}, Seat {ticket.seat.seat_number}")
-    p.drawString(50, height - 140, f"Ticket ID: {ticket.ticket_id}")
-    p.drawString(50, height - 160, f"Status: {ticket.ticket_status}")
+    y = height - 110
+    line_height = 22
 
+    p.drawString(50, y, f"Date: {ticket.session.session_datetime.strftime('%d.%m.%Y %H:%M')}")
+    y -= line_height
+    p.drawString(50, y, f"Seat: Row {ticket.seat.row_number}, Seat {ticket.seat.seat_number}")
+    y -= line_height
+    p.drawString(50, y, f"Ticket ID: {ticket.ticket_id}")
+    y -= line_height
+    p.drawString(50, y, f"Status: {ticket.ticket_status}")
+
+    # === QR-код ===
+    qr_url = django_request.build_absolute_uri(f"/api/ticket/pdf/{qr_code}/")
+    qr = qrcode.QRCode(version=1, box_size=2, border=1)
+    qr.add_data(qr_url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+
+    qr_buffer = io.BytesIO() 
+    qr_img.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+    qr_image_reader = ImageReader(qr_buffer)
+
+    qr_size = 80
+    qr_x = width - qr_size - 40
+    qr_y = 60
+    p.drawImage(qr_image_reader, qr_x, qr_y, width=qr_size, height=qr_size)
+
+    p.setFont("Helvetica", 8)
+    p.drawString(qr_x, qr_y - 15, "Scan to verify")
+
+    p.line(40, 40, width - 40, 40)
+    p.setFont("Helvetica-Oblique", 8)
+    p.drawString(50, 25, "© NORA Cinema System | Valid only for this session")
 
     p.showPage()
     p.save()
-    buffer.seek(0)
+
+    pdf_buffer.seek(0)
+    response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="ticket_{qr_code}.pdf"'
+    return response
 
 
-    return HttpResponse(buffer.getvalue(), content_type='application/pdf')
-
-
-# Получить билеты пользователя
 @api_view(['GET'])
 def get_user_tickets(request):
     """Получить все билеты пользователя"""
@@ -428,13 +476,17 @@ def get_user_tickets(request):
         
         tickets = Ticket.objects.filter(
             order__user_id=user_id
-        ).select_related('order', 'session', 'seat').order_by('-created_at')
+        ).select_related(
+            'order', 
+            'session__movie',  
+            'seat'
+        ).order_by('-created_at')
         
         ticket_data = []
         for ticket in tickets:
             ticket_data.append({
                 'ticket_id': ticket.ticket_id,
-                'movie_title': ticket.session.movie.title,
+                'movie_title': ticket.session.movie.title,  
                 'session_datetime': ticket.session.session_datetime,
                 'seat': f'{ticket.seat.row_number}{ticket.seat.seat_number}',
                 'qr_code': ticket.qr_code,

@@ -10,7 +10,7 @@ from cinema.views import (
     MovieViewSet, SessionViewSet, TicketListView,
     get_session_seats, register, login, get_profile,
     buy_ticket, get_user_tickets, cancel_ticket, get_points_balance, 
-    qr_code_image, ticket_pdf
+    qr_code_image, ticket_pdf, admin_login_check
 )
 
 # Создаем router для ViewSets
@@ -18,9 +18,13 @@ router = DefaultRouter()
 router.register(r'api/movies', MovieViewSet, basename='movie')
 router.register(r'api/sessions', SessionViewSet, basename='session')
 
+
 urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
+
+    #admin-check for panel
+    path('api/admin-check/', admin_login_check, name='admin_check'),
     
     # ===== ВАРИАНТ 1: СПЕЦИАЛЬНЫЕ URL'Ы ДО ROUTER =====
     # ВАЖНО: эти URL'ы ДОЛЖНЫ быть ДО include(router.urls)

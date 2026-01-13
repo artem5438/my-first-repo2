@@ -1,36 +1,39 @@
 // client/js/admin.js — ИСПРАВЛЕННАЯ ВЕРСИЯ
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const isAuth = localStorage.getItem('auth_token');
     const userEmail = localStorage.getItem('user_email');
-    const posterInput = document.getElementById('movie-poster');
-    
-    if (posterInput) {
-        posterInput.addEventListener('change', function() {
-            const preview = document.getElementById('poster-preview');
-            const previewImg = document.getElementById('poster-preview-img');
-            
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                
-                reader.readAsDataURL(this.files[0]);
-            } else {
-                preview.style.display = 'none';
-            }
-        });
-    }
+
     if (!isAuth || userEmail !== 'root@root.com') {
         window.location.href = 'login.html';
         return;
     }
     
+    const savedPass = localStorage.getItem('admin_pass_ok');
+    if (!savedPass) {
+        const pass = prompt('Введите пароль администратора:');
+        if (!pass) {
+            alert('Доступ запрещён');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        const res = await fetch('http://localhost:8000/api/admin-check/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pass })
+        });
+
+        if (res.ok) {
+            localStorage.setItem('admin_pass_ok', 'true');
+        } else {
+            alert('Неверный пароль!');
+            window.location.href = 'index.html';
+            return;
+        }
+    }
+
     console.log('✅ Админ-панель: доступ для', userEmail);
-    
     loadMovies();
     loadSessions();
     populateMovieSelect();
