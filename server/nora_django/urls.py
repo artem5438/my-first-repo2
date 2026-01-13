@@ -10,14 +10,14 @@ from cinema.views import (
     MovieViewSet, SessionViewSet, TicketListView,
     get_session_seats, register, login, get_profile,
     buy_ticket, get_user_tickets, cancel_ticket, get_points_balance, 
-    qr_code_image, ticket_pdf, admin_login_check
+    qr_code_image, ticket_pdf, admin_login_check, HallViewSet  # Добавлен HallViewSet
 )
 
 # Создаем router для ViewSets
 router = DefaultRouter()
 router.register(r'api/movies', MovieViewSet, basename='movie')
 router.register(r'api/sessions', SessionViewSet, basename='session')
-
+router.register(r'api/halls', HallViewSet, basename='hall')  # НОВЫЙ РЕГИСТРАТОР
 
 urlpatterns = [
     # Admin

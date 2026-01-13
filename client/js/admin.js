@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadMovies();
     loadSessions();
     populateMovieSelect();
+    populateHallSelect(); 
     setupFormHandlers();
     
     // Обработчик предпросмотра изображения
@@ -188,9 +189,10 @@ async function loadSessions() {
             const card = document.createElement('div');
             card.className = 'item-card';
             card.innerHTML = `
-                <h4>${escapeHtml(session.movie_title || 'Неизвестный фильм')}</h4>
+                <h4>${escapeHtml(session.movie?.title || 'Неизвестный фильм')}</h4>
                 <div class="item-meta">📅 ${formatDateTime(session.session_datetime)}</div>
-                <div class="item-meta">🎪 Зал ${session.hall_number || session.hall}</div>
+                <div class="item-meta">⏰ ${formatDateTime(session.end_datetime)}</div>
+                <div class="item-meta">🎪 Зал ${session.hall?.name || session.hall_id || 'Неизвестный'}</div>
                 <div class="item-actions">
                     <button class="btn-edit" onclick="editSession(${sessionId})">✏️ Редактировать</button>
                     <button class="btn-delete" onclick="deleteSession(${sessionId})">🗑️ Удалить</button>
@@ -205,6 +207,7 @@ async function loadSessions() {
 }
 
 // ===== ЗАПОЛНЕНИЕ DROPDOWN =====
+// ===== ЗАПОЛНЕНИЕ ФИЛЬМОВ =====
 async function populateMovieSelect() {
     try {
         const response = await fetch('http://localhost:8000/api/movies/', {
@@ -222,16 +225,74 @@ async function populateMovieSelect() {
         }
         
         const select = document.getElementById('session-movie');
+        select.innerHTML = '<option value="">Выберите фильм</option>';
         
         movies.forEach(movie => {
             const movieId = movie.id || movie.movie_id;
             const option = document.createElement('option');
             option.value = movieId;
-            option.textContent = movie.title || 'Неизвестный фильм';
+            option.textContent = `${movie.title || 'Без названия'} (${movieId})`;
             select.appendChild(option);
         });
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error loading movies:', error);
+        const select = document.getElementById('session-movie');
+        select.innerHTML = `
+            <option value="">Ошибка загрузки фильмов</option>
+            <option value="1">Фильм 1</option>
+            <option value="2">Фильм 2</option>
+            <option value="3">Фильм 3</option>
+        `;
+    }
+}
+
+// ===== ЗАПОЛНЕНИЕ ЗАЛОВ =====
+async function populateHallSelect() {
+    try {
+        const response = await fetch('http://localhost:8000/api/halls/', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        });
+        const data = await response.json();
+        
+        let halls = [];
+        if (Array.isArray(data)) {
+            halls = data;
+        } else if (data.results) {
+            halls = data.results;
+        } else if (data.halls) {
+            halls = data.halls;
+        }
+        
+        const select = document.getElementById('session-hall');
+        select.innerHTML = '<option value="">Выберите зал</option>';
+        
+        halls.forEach(hall => {
+            const hallId = hall.id || hall.hall_id;
+            const option = document.createElement('option');
+            option.value = hallId;
+            option.textContent = `Зал ${hall.name || hallId}`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading halls:', error);
+        const select = document.getElementById('session-hall');
+        select.innerHTML = `
+            <option value="">⚠️ Залы не загружены</option>
+            <option value="0">⚠️ Проверьте сервер (нет эндпоинта /api/halls/)</option>
+            <option value="1">Зал 1 (тестовый)</option>
+            <option value="2">Зал 2 (тестовый)</option>
+            <option value="3">Зал 3 (тестовый)</option>
+        `;
+        
+        // Добавляем сообщение о том, что нужно добавить залы
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-error';
+        alertDiv.textContent = '⚠️ Ошибка загрузки залов: эндпоинт /api/halls/ не настроен. Проверьте views.py и urls.py.';
+        const content = document.querySelector('.admin-content');
+        if (content) {
+            content.insertBefore(alertDiv, content.firstChild);
+            setTimeout(() => alertDiv.remove(), 4000);
+        }
     }
 }
 
@@ -303,48 +364,79 @@ function setupFormHandlers() {
             console.error('❌ Ошибка:', error);
             showAlert(`❌ Ошибка: ${error.message}`, 'error');
         }
-    });
+    }); 
     
     // СЕАНСЫ
     const sessionForm = document.getElementById('session-form');
     sessionForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const sessionData = {
-            movie_id: parseInt(document.getElementById('session-movie').value),
-            hall_id: parseInt(document.getElementById('session-hall').value),
-            session_datetime: document.getElementById('session-start').value,
-            end_datetime: document.getElementById('session-end').value,
-            is_active: true
-        };
+        // Добавляем проверку на выбор фильма
+        const movieId = document.getElementById('session-movie').value;
+        const hallId = document.getElementById('session-hall').value;
+        const sessionStart = document.getElementById('session-start').value;
+        const sessionEnd = document.getElementById('session-end').value;
+        const sessionPrice = document.getElementById('session-price') ? document.getElementById('session-price').value : '100';
         
+        // Проверяем обязательные поля
+        if (!movieId || movieId === '' || movieId === 'undefined') {
+            showAlert('❌ Выберите фильм из списка', 'error');
+            return;
+        }
+        if (!hallId || hallId === '' || hallId === 'undefined') {
+            showAlert('❌ Выберите зал', 'error');
+            return;
+        }
+        if (!sessionStart || sessionStart === '') {
+            showAlert('❌ Укажите дату и время начала сеанса', 'error');
+            return;
+        }
+        if (!sessionEnd || sessionEnd === '') {
+            showAlert('❌ Укажите дату и время окончания сеанса', 'error');
+            return;
+        }
+        if (!sessionPrice || sessionPrice === '' || sessionPrice === '0') {
+            showAlert('❌ Укажите цену билета', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('movie_id', movieId);
+        formData.append('hall_id', hallId);
+        formData.append('session_datetime', sessionStart);
+        formData.append('end_datetime', sessionEnd);
+        formData.append('price', sessionPrice); // Добавляем цену
+        formData.append('is_active', 'true');
+        formData.append('available_seats', '100');
+
         try {
             const sessionId = sessionForm.dataset.sessionId;
             const token = localStorage.getItem('auth_token');
-            
             let response;
+            
             if (sessionId && sessionId !== 'undefined') {
                 response = await fetch(`http://localhost:8000/api/sessions/${sessionId}/`, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(sessionData)
+                    body: formData
                 });
             } else {
                 response = await fetch('http://localhost:8000/api/sessions/create/', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(sessionData)
+                    body: formData
                 });
             }
-            
-            if (!response.ok) throw new Error(`Ошибка ${response.status}`);
-            
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Ошибка ${response.status}: ${errorText}`);
+            }
+
             showAlert(sessionId ? '✅ Сеанс обновлен!' : '✅ Сеанс добавлен!', 'success');
             sessionForm.reset();
             delete sessionForm.dataset.sessionId;
@@ -412,10 +504,36 @@ async function editSession(sessionId) {
         
         const session = await response.json();
         
-        document.getElementById('session-movie').value = session.movie_id;
-        document.getElementById('session-hall').value = session.hall_id;
+        // Устанавливаем значения
+        document.getElementById('session-movie').value = session.movie_id || session.movie?.id || '';
+        document.getElementById('session-hall').value = session.hall_id || session.hall?.id || '';
         document.getElementById('session-start').value = formatDateTimeForInput(session.session_datetime);
         document.getElementById('session-end').value = formatDateTimeForInput(session.end_datetime);
+        document.getElementById('session-price').value = session.price ? session.price : '100'; // Устанавливаем цену
+        
+        // Дополнительная проверка для выпадающих списков
+        const movieSelect = document.getElementById('session-movie');
+        const hallSelect = document.getElementById('session-hall');
+        
+        if (movieSelect) {
+            const options = movieSelect.querySelectorAll('option');
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value == (session.movie_id || session.movie?.id)) {
+                    options[i].selected = true;
+                    break;
+                }
+            }
+        }
+        
+        if (hallSelect) {
+            const options = hallSelect.querySelectorAll('option');
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value == (session.hall_id || session.hall?.id)) {
+                    options[i].selected = true;
+                    break;
+                }
+            }
+        }
         
         document.getElementById('session-form').dataset.sessionId = sessionId;
         document.querySelector('form').scrollIntoView({ behavior: 'smooth' });

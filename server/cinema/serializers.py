@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from .models import Movie, Session, Ticket, Genre
+from .models import Movie, Session, Ticket, Genre, Hall
+
+class HallSerializer(serializers.ModelSerializer):  # НОВЫЙ СЕРИАЛИЗАТОР
+    class Meta:
+        model = Hall
+        fields = ['hall_id', 'name', 'capacity']
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,7 +19,7 @@ class MovieSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Movie
-        fields = ['movie_id', 'title', 'director', 'genres', 'description', 'age_rating', 'duration_minutes', 'release_date', 'end_date', 'poster_url' ]
+        fields = ['movie_id', 'title', 'director', 'genres', 'description', 'age_rating', 'duration_minutes', 'release_date', 'end_date', 'poster_url']
 
     def get_poster_url(self, obj):
         if obj.poster_url:  
@@ -24,9 +29,20 @@ class MovieSerializer(serializers.ModelSerializer):
 
 class SessionSerializer(serializers.ModelSerializer):
     movie = MovieSerializer(read_only=True)
+    movie_id = serializers.PrimaryKeyRelatedField(
+        write_only=True, 
+        queryset=Movie.objects.all(),
+        source='movie'
+    )
+    hall_id = serializers.PrimaryKeyRelatedField(
+        write_only=True, 
+        queryset=Hall.objects.all(),
+        source='hall'
+    )
+    
     class Meta:
         model = Session
-        fields = ['session_id', 'movie', 'session_datetime', 'hall_id', 'available_seats', 'price']
+        fields = ['session_id', 'movie', 'movie_id', 'hall_id', 'session_datetime', 'end_datetime', 'available_seats', 'price']
 
 class TicketSerializer(serializers.ModelSerializer):
     session = SessionSerializer(read_only=True)

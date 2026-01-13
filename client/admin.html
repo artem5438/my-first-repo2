@@ -38,7 +38,7 @@
                 <button class="admin-menu-btn" onclick="switchAdminTab('sessions')">
                     🎫 Сеансы
                 </button>
-                <button class="admin-menu-btn" onclick="switchAdminTab('reports')"> <!-- Детский анекдот: "Будь осторожнее, здесь лестница..." -"Да пое бать_бать_бать_бать_бать..." --> 
+                <button class="admin-menu-btn" onclick="switchAdminTab('reports')"> 
                     📄 Отчёты
                 </button>
             </div>
@@ -142,9 +142,6 @@
                                 <label class="form-label">Зал</label>
                                 <select id="session-hall" class="form-select" required>
                                     <option value="">Выберите зал</option>
-                                    <option value="1">Зал 1</option>
-                                    <option value="2">Зал 2</option>
-                                    <option value="3">Зал 3</option>
                                 </select>
                             </div>
                         </div>
@@ -159,6 +156,10 @@
                                 <input type="datetime-local" id="session-end" class="form-input" required>
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">Цена билета</label>
+                            <input type="number" id="session-price" class="form-input" min="0" step="0.01" required>
+                        </div>
 
                         <div>
                             <button type="submit" class="btn-submit">💾 Сохранить сеанс</button>
@@ -166,6 +167,7 @@
                         </div>
                     </form>
                 </div>
+                
 
                 <!-- SESSIONS LIST -->
                 <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Список сеансов</h3>

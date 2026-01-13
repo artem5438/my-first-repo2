@@ -24,9 +24,7 @@ from .models import (
     User, Movie, Session, Ticket, Order, Hall, Seat, SessionSeat,
     Genre, UserPointsBalance, PointsTransaction, Cancellation
 )
-from .serializers import MovieSerializer, SessionSerializer, TicketSerializer
-
-
+from .serializers import MovieSerializer, SessionSerializer, TicketSerializer, HallSerializer  # Добавлен HallSerializer
 
 # ==================== VIEWSETS (для админ-панели) ====================
 from rest_framework.parsers import MultiPartParser, FormParser  # Добавьте эту строку
@@ -36,8 +34,6 @@ class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.filter(is_active=True)
     serializer_class = MovieSerializer
     parser_classes = [MultiPartParser, FormParser]  # ДОБАВЬТЕ ЭТУ СТРОКУ
-
-
 
 class SessionViewSet(viewsets.ModelViewSet):
     """ViewSet для сеансов - автоматически создает все CRUD методы"""
@@ -50,6 +46,11 @@ class SessionViewSet(viewsets.ModelViewSet):
         if movie_id:
             queryset = queryset.filter(movie_id=movie_id)
         return queryset
+
+class HallViewSet(viewsets.ReadOnlyModelViewSet):  # НОВЫЙ ВИД
+    """ViewSet для залов"""
+    queryset = Hall.objects.filter(is_active=True)
+    serializer_class = HallSerializer
 
 ADMIN_PASSWORD = os.getenv('ADMIN_PANEL_PASSWORD')
 
@@ -67,15 +68,12 @@ def admin_login_check(request):
     except Exception:
         return JsonResponse({'error': 'Ошибка запроса'}, status=400)
 
-
 # ==================== СТАРЫЕ VIEWS (для остального функционала) ====================
 
 # Билеты
 class TicketListView(generics.ListAPIView):
     queryset = Ticket.objects.filter(ticket_status='valid')
     serializer_class = TicketSerializer
-
-
 
 # Места и сеансы
 @api_view(['GET'])
@@ -116,8 +114,6 @@ def get_session_seats(request, session_id):
     
     except Session.DoesNotExist:
         return Response({'error': 'Сеанс не найден'}, status=status.HTTP_404_NOT_FOUND)
-
-
 
 # Регистрация
 @api_view(['POST'])
@@ -165,8 +161,6 @@ def register(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 # Вход
 @api_view(['POST'])
 def login(request):
@@ -203,8 +197,6 @@ def login(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 # Профиль
 @api_view(['GET'])
 def get_profile(request):
@@ -232,8 +224,6 @@ def get_profile(request):
     
     except User.DoesNotExist:
         return Response({'error': 'Пользователь не найден'}, status=status.HTTP_404_NOT_FOUND)
-
-
 
 # Купить билет
 @api_view(['POST'])
@@ -377,10 +367,8 @@ def qr_code_image(request, qr_code):
     except Ticket.DoesNotExist:
         return Response({'error': 'QR-код не найден'}, status=status.HTTP_404_NOT_FOUND)
 
-
     # Формируем URL для PDF (пока заглушка)
     target_url = request.build_absolute_uri(f"/api/ticket/pdf/{qr_code}/")
-
 
     # Генерация QR
     qr = qrcode.QRCode(version=1, box_size=8, border=4)
@@ -388,12 +376,10 @@ def qr_code_image(request, qr_code):
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
 
-
     # Сохраняем в буфер
     buffer = BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
-
 
     # Возвращаем как файл через DRF
     return HttpResponse(buffer.getvalue(), content_type="image/png")
@@ -462,7 +448,6 @@ def ticket_pdf(request, qr_code):
     response['Content-Disposition'] = f'inline; filename="ticket_{qr_code}.pdf"'
     return response
 
-
 @api_view(['GET'])
 def get_user_tickets(request):
     """Получить все билеты пользователя"""
@@ -499,8 +484,6 @@ def get_user_tickets(request):
     
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 # Отменить билет
 @api_view(['POST'])
@@ -584,8 +567,6 @@ def cancel_ticket(request):
         return Response({'error': 'Билет не найден'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 # Получить баланс баллов
 @api_view(['GET'])
