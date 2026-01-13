@@ -1,12 +1,15 @@
 // API Клиент для работы с бэкендом
+
 class MovieAPI {
     constructor(baseURL = 'http://localhost:8000/api') {
         this.baseURL = baseURL;
     }
 
     // ===== Вспомогательные методы =====
+    
     getAuthHeaders() {
-        const token = localStorage.getItem('auth_token');
+        // ✅ ИСПРАВЛЕНО: используем правильный ключ
+        const token = localStorage.getItem('authtoken');
         const headers = {
             'Content-Type': 'application/json',
         };
@@ -98,11 +101,13 @@ class MovieAPI {
                 body: JSON.stringify({ email, password }),
             });
             const data = await this.handleResponse(response);
-            if (data.token) {
-                localStorage.setItem('auth_token', data.token);
-                localStorage.setItem('user_id', data.user_id);
-                localStorage.setItem('user_email', data.email);
-                localStorage.setItem('user_full_name', data.full_name);
+            
+            if (data.token || data.authtoken) {
+                // ✅ ИСПРАВЛЕНО: используем правильные ключи localStorage
+                localStorage.setItem('authtoken', data.token || data.authtoken);
+                localStorage.setItem('userid', data.userid || data.user_id || data.id);
+                localStorage.setItem('useremail', data.email);
+                localStorage.setItem('userfullname', data.fullname || data.full_name || data.name);
             }
             return data;
         } catch (error) {
@@ -113,10 +118,10 @@ class MovieAPI {
 
     // ===== ВЫХОД =====
     logout() {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_id');
-        localStorage.removeItem('user_email');
-        localStorage.removeItem('user_full_name');
+        localStorage.removeItem('authtoken');
+        localStorage.removeItem('userid');
+        localStorage.removeItem('useremail');
+        localStorage.removeItem('userfullname');
     }
 
     // ===== ПРОФИЛЬ =====
@@ -275,11 +280,11 @@ class MovieAPI {
 
     // ===== ПРОВЕРКА АУТЕНТИФИКАЦИИ =====
     isAuthenticated() {
-        return !!localStorage.getItem('auth_token');
+        return !!localStorage.getItem('authtoken');
     }
 
     getCurrentUserId() {
-        return localStorage.getItem('user_id');
+        return localStorage.getItem('userid');
     }
 }
 

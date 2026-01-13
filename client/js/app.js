@@ -10,9 +10,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+
 // ===== ПЕРЕМЕННЫЕ СОСТОЯНИЯ =====
 let selectedSeats = [];
 let currentSessionId = null;
+
 
 
 
@@ -33,8 +35,6 @@ async function loadPopularMovies() {
             <div class="skeleton"></div>
             <div class="skeleton"></div>
         `;
-
-
 
         const moviesData = await api.getMovies();
         
@@ -86,6 +86,7 @@ async function loadPopularMovies() {
 
 
 
+
 // ===== СОЗДАНИЕ КАРТОЧКИ ФИЛЬМА =====
 function createMovieCard(movie) {
     const card = document.createElement('div');
@@ -132,6 +133,7 @@ function createMovieCard(movie) {
     
     return card;
 }
+
 
 
 
@@ -199,12 +201,13 @@ function showMovieModal(movie) {
 
 
 
+
 // ===== ОБРАБОТЧИК ВЫБОРА СЕАНСА =====
 async function handleSelectSession(event, movieId) {
     event.stopPropagation();
     event.preventDefault();
     
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('authtoken');
     if (!token) {
         alert('Для бронирования необходимо войти в систему');
         window.location.href = 'login.html';
@@ -222,14 +225,15 @@ async function handleSelectSession(event, movieId) {
 
 
 
+
 // ===== МОДАЛЬНОЕ ОКНО С СЕАНСАМИ =====
 function showSessionsModal(movieId, sessionsData) {
     const modal = document.getElementById('movie-modal');
     const modalBody = document.getElementById('modal-body');
-    
+
     if (!modal || !modalBody) return;
-    
-    let sessions = [];
+
+    let sessions;
     if (Array.isArray(sessionsData)) {
         sessions = sessionsData;
     } else if (sessionsData.results) {
@@ -239,45 +243,49 @@ function showSessionsModal(movieId, sessionsData) {
     } else {
         sessions = sessionsData;
     }
-    
+
     if (!Array.isArray(sessions) || sessions.length === 0) {
-        modalBody.innerHTML = '<div class="empty-message">Сеансы не найдены. Загляните сюда чуть позже :)</div>';
+        modalBody.innerHTML = `<div class="empty-message">Нет доступных сеансов.</div>`;
         modal.classList.add('show');
         return;
     }
-    
-    let sessionsHTML = `<h3 style="color: var(--primary-color); margin-bottom: 1.5rem;">Выберите сеанс</h3>`;
-    sessionsHTML += '<div class="sessions-list">';
-    
-    sessions.forEach(session => {
-    const time = session.session_time || session.session_datetime || session.start_time;
-    const hall = session.hall_number || session.hall || session.hall_id || session.cinema_hall || '1';
-    const seats = session.available_seats || session.free_seats || 50;
-    const sessionId = session.id || session.session_id;
-    const price = session.price != null ? `${parseFloat(session.price).toFixed(2)} ₽` : '—';
 
-    sessionsHTML += `
-        <div class="session-card">
-            <div class="session-info">
-                <div class="session-time">${formatTime(time)}</div>
-                <div class="session-date">${formatDate(time)}</div>
-                <div class="session-hall">Зал: ${hall}</div>
-                <div class="session-seats">Свободно мест: ${seats}</div>
-                <div class="session-price" style="font-weight: bold; color: var(--primary-color); margin-top: 0.5rem;">
-                    Цена: ${price}
+    let sessionsHTML = `<h3 style="color: var(--primary-color); margin-bottom: 1.5rem;">Выберите сеанс</h3>`;
+    sessionsHTML += `<div class="sessions-list">`;
+
+    sessions.forEach(session => {
+        const time = session.sessiontime || session.sessiondatetime || session.session_datetime || session.starttime;
+        const hall = (session.hall && session.hall.name) ? session.hall.name : (session.hallnumber || session.hallid || session.cinemahall || "1");
+        const seats = session.availableseats || session.freeseats || 50;
+        const sessionId = session.id || session.sessionid || session.session_id;
+        const price = session.price != null ? parseFloat(session.price).toFixed(2) : '—';
+
+        sessionsHTML += `
+            <div class="session-card">
+                <div class="session-info">
+                    <div class="session-time">${formatTime(time)}</div>
+                    <div class="session-date">${formatDate(time)}</div>
+                    <div class="session-hall">Зал: ${hall}</div>
+                    <div class="session-seats">Свободных мест: ${seats}</div>
+                    <div class="session-price" style="font-weight: bold; color: var(--primary-color); margin-top: 0.5rem;">
+                        Цена: ${price} ₽
+                    </div>
+                </div>
+                <div>
+                    <button class="btn-sessions" onclick="handleSelectSeats(event, ${sessionId})">
+                        Выбрать места
+                    </button>
                 </div>
             </div>
-            <button class="btn-sessions" onclick="handleSelectSeats(event, ${sessionId})">
-                Выбрать места
-            </button>
-        </div>
-    `;
+        `;
     });
-    
-    sessionsHTML += '</div>';
+
+    sessionsHTML += `</div>`;
+
     modalBody.innerHTML = sessionsHTML;
     modal.classList.add('show');
 }
+
 
 
 
@@ -294,6 +302,7 @@ async function handleSelectSeats(event, sessionId) {
         alert('Ошибка загрузки мест: ' + error.message);
     }
 }
+
 
 
 
@@ -478,6 +487,7 @@ function showSeatsModal(sessionId, seatsData) {
 }
 
 
+
 // ===== ПЕРЕКЛЮЧЕНИЕ ВЫБРАННОГО МЕСТА =====
 function toggleSeat(seatId, displayName) {
     const button = document.getElementById(`seat-${seatId}`);
@@ -504,6 +514,7 @@ function toggleSeat(seatId, displayName) {
 
 
 
+
 // ===== ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ ВЫБРАННЫХ МЕСТ =====
 function updateSeatsDisplay() {
     const display = document.getElementById('selected-display');
@@ -520,6 +531,7 @@ function updateSeatsDisplay() {
 
 
 
+
 // ===== ПОКУПКА БИЛЕТОВ (БЕЗ БРОНИРОВАНИЯ) =====
 async function buyTickets(sessionId) {
     if (selectedSeats.length === 0) {
@@ -527,23 +539,17 @@ async function buyTickets(sessionId) {
         return;
     }
 
-
-
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('userid');
     if (!userId) {
         alert('Необходимо авторизоваться');
         window.location.href = 'login.html';
         return;
     }
 
-
-
     try {
         let successCount = 0;
         let errorCount = 0;
         const errors = [];
-
-
 
         for (const seat of selectedSeats) {
             try {
@@ -557,8 +563,6 @@ async function buyTickets(sessionId) {
             }
         }
 
-
-
         if (successCount > 0 && errorCount === 0) {
             alert(`✅ Успешно куплено ${successCount} билет(ов)!`);
             closeModal();
@@ -571,13 +575,12 @@ async function buyTickets(sessionId) {
             alert(`❌ Ошибка:\n${errors.join('\n')}`);
         }
 
-
-
     } catch (error) {
         console.error('Ошибка:', error);
         alert('❌ Ошибка: ' + error.message);
     }
 }
+
 
 
 // ===== ФОРМАТИРОВАНИЕ ДАТЫ И ВРЕМЕНИ =====
@@ -594,6 +597,7 @@ function formatTime(dateTimeString) {
 }
 
 
+
 function formatDate(dateTimeString) {
     if (!dateTimeString) return '';
     try {
@@ -607,6 +611,7 @@ function formatDate(dateTimeString) {
         return '';
     }
 }
+
 
 
 // ===== УПРАВЛЕНИЕ МОДАЛЬНЫМ ОКНОМ =====
@@ -632,6 +637,7 @@ function setupModal() {
 }
 
 
+
 function closeModal() {
     const modal = document.getElementById('movie-modal');
     if (modal) {
@@ -640,6 +646,7 @@ function closeModal() {
     selectedSeats = [];
     currentSessionId = null;
 }
+
 
 
 // ===== НАСТРОЙКА НАВИГАЦИИ =====
@@ -656,28 +663,21 @@ function setupNavigation() {
 }
 
 
+
 // ===== НАСТРОЙКА КНОПКИ ЛОГИНА =====
 function setupLoginButton() {
     const loginBtn = document.getElementById('login-btn');
     if (!loginBtn) return;
     
-    const isAuth = localStorage.getItem('auth_token');
-    
-    if (isAuth) {
-        const userName = localStorage.getItem('user_fullname') || 'Профиль';
-        loginBtn.textContent = userName;
-        loginBtn.onclick = (e) => {
-            e.preventDefault();
-            window.location.href = 'profile.html';
-        };
+    if (api.isAuthenticated()) {
+        loginBtn.textContent = 'Профиль';  // ✅ ТОЛЬКО "Профиль"
+        loginBtn.href = 'profile.html';
     } else {
         loginBtn.textContent = 'Вход';
-        loginBtn.onclick = (e) => {
-            e.preventDefault();
-            window.location.href = 'login.html';
-        };
+        loginBtn.href = 'login.html';
     }
 }
+
 
 
 // ===== НАСТРОЙКА АДМИН КНОПКИ =====
@@ -688,12 +688,12 @@ function setupAdminButton() {
         return;
     }
     
-    const isAuth = localStorage.getItem('auth_token');
-    const userEmail = localStorage.getItem('user_email'); // ✅ ПРОВЕРЯЕМ EMAIL
+    const isAuth = localStorage.getItem('authtoken');
+    const userEmail = localStorage.getItem('useremail');
     
     console.log('🔍 Проверка админа:', { isAuth: !!isAuth, userEmail });
     
-    // Проверяем по email "root@root"
+    // Проверяем по email "root@root.com"
     if (isAuth && userEmail === 'root@root.com') {
         adminBtn.style.display = 'block';
         console.log('✅ Админ-панель доступна');
@@ -702,6 +702,7 @@ function setupAdminButton() {
         console.log('❌ Админ-панель скрыта');
     }
 }
+
 
 
 // ===== ЭКСПОРТ ФУНКЦИЙ ГЛОБАЛЬНО =====

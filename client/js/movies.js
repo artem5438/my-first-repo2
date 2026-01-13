@@ -127,7 +127,7 @@ async function loadAllMovies() {
 async function loadHalls() {
     try {
         const response = await fetch('http://localhost:8000/api/halls/', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('authtoken')}` }
         });
         
         if (!response.ok) {
@@ -311,10 +311,11 @@ async function viewMovieSessions(event, movieId, movieTitle) {
         
         sessions.forEach(session => {
             // Получаем название зала из загруженных залов
-            const hallName = getHallName(session.hall_id || session.hall);
-            const time = session.session_time || session.session_datetime || session.start_time;
-            const seats = session.available_seats || session.free_seats || 50;
-            const sessionId = session.id || session.session_id;
+            const hallName = getHallName(session.hallid || session.hall_id, session.hall);
+            const time = session.sessiontime || session.sessiondatetime || session.session_datetime || session.starttime;
+            const seats = session.availableseats || session.freeseats || 50;
+            const sessionId = session.id || session.sessionid || session.session_id;
+
             const price = session.price != null ? `${parseFloat(session.price).toFixed(2)} ₽` : '—';
 
             sessionsHTML += `
@@ -346,12 +347,21 @@ async function viewMovieSessions(event, movieId, movieTitle) {
 }
 
 // ===== ПОЛУЧЕНИЕ НАЗВАНИЯ ЗАЛА =====
-function getHallName(hallId) {
-    if (!hallId) return 'Неизвестный зал';
+function getHallName(hallId, hallData) {
+    // Если приходит объект зала
+    if (hallData && typeof hallData === 'object') {
+        return hallData.name || hallData.number || hallData.id || 'Зал';
+    }
     
-    const hall = allHalls.find(h => h.id == hallId);
-    return hall ? hall.name : `Зал ${hallId}`;
+    // Если приходит ID, ищем в массиве allHalls
+    if (hallId) {
+        const hall = allHalls.find(h => h.id === hallId);
+        return hall ? hall.name : `Зал ${hallId}`;
+    }
+    
+    return 'Зал не указан';
 }
+
 
 // ===== ВЫБОР МЕСТ ДЛЯ СЕАНСА =====
 async function selectSeatsForSession(sessionId, movieTitle) {
@@ -585,7 +595,7 @@ async function confirmSeatsSelectionCarousel(sessionId) {
         return;
     }
 
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('userid');
     if (!userId) {
         alert('Необходимо авторизоваться');
         window.location.href = 'login.html';
@@ -753,7 +763,9 @@ function setupLoginButton() {
     const loginBtn = document.getElementById('login-btn');
     if (!loginBtn) return;
     
-    const isAuth = localStorage.getItem('auth_token');
+    const isAuth = localStorage.getItem('authtoken');
+    const userName = localStorage.getItem('userfullname') || 'Профиль';
+
     
     if (isAuth) {
         const userName = localStorage.getItem('user_fullname') || 'Профиль';
@@ -779,8 +791,9 @@ function setupAdminButton() {
         return;
     }
     
-    const isAuth = localStorage.getItem('auth_token');
-    const userEmail = localStorage.getItem('user_email'); // ✅ ПРОВЕРЯЕМ EMAIL
+    const isAuth = localStorage.getItem('authtoken');
+    const userEmail = localStorage.getItem('useremail'); // ✅ ПРОВЕРЯЕМ EMAIL
+
     
     console.log('🔍 Проверка админа:', { isAuth: !!isAuth, userEmail });
     

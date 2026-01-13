@@ -1,14 +1,20 @@
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 document.addEventListener('DOMContentLoaded', () => {
-    const isAuth = localStorage.getItem('auth_token');
+    console.log('Profile: DOM загружен, инициализация...');
+    
+    const isAuth = localStorage.getItem('authtoken');
     if (!isAuth) {
+        console.log('❌ Нет авторизации, редирект на login');
         window.location.href = 'login.html';
         return;
     }
     
+    console.log('✅ Авторизация найдена');
     loadProfileData();
     loadUserTickets();
+    setupAdminButton();
 });
+
 
 // ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
 function switchTab(tabName) {
@@ -31,35 +37,56 @@ function switchTab(tabName) {
 
 
 
+
 // ===== ЗАГРУЗКА ДАННЫХ ПРОФИЛЯ =====
 async function loadProfileData() {
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('userid');
+    
+    console.log('Загрузка профиля для userId:', userId);
+    
+    if (!userId) {
+        console.error('❌ userId не найден в localStorage');
+        showToast('Ошибка: не найден идентификатор пользователя', 'error');
+        return;
+    }
     
     try {
         const profile = await api.getProfile(userId);
+        console.log('✅ Профиль загружен:', profile);
         
-        document.getElementById('profile-name').textContent = profile.full_name;
-        document.getElementById('profile-email').textContent = profile.email;
+        document.getElementById('profile-name').textContent = profile.fullname || profile.full_name || 'Неизвестно';
+        document.getElementById('profile-email').textContent = profile.email || 'Не указана';
         document.getElementById('profile-phone').textContent = profile.phone || 'Не указан';
-        document.getElementById('profile-birth').textContent = formatDate(profile.birth_date);
+        document.getElementById('profile-birth').textContent = formatDate(profile.birthdate || profile.birth_date) || 'Не указана';
         
         const pointsData = await api.getPointsBalance(userId);
-        document.getElementById('profile-points').textContent = pointsData.current_points;
+        console.log('✅ Баланс баллов:', pointsData);
+        document.getElementById('profile-points').textContent = pointsData.currentpoints || pointsData.current_points || 0;
     } catch (error) {
-        console.error('Error loading profile:', error);
+        console.error('❌ Ошибка загрузки профиля:', error);
         showToast(`Ошибка загрузки профиля: ${error.message}`, 'error');
     }
 }
 
 
 
+
 // ===== ЗАГРУЗКА КУПЛЕННЫХ БИЛЕТОВ =====
 async function loadUserTickets() {
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('userid');
     const ticketsContainer = document.getElementById('tickets-list');
     const ticketsLoading = document.getElementById('tickets-loading');
     const ticketsEmpty = document.getElementById('tickets-empty');
     const ticketsError = document.getElementById('tickets-error');
+    
+    console.log('Загрузка билетов для userId:', userId);
+    
+    if (!userId) {
+        console.error('❌ userId не найден в localStorage');
+        ticketsError.style.display = 'block';
+        ticketsError.textContent = 'Ошибка: не найден идентификатор пользователя';
+        return;
+    }
     
     try {
         ticketsLoading.style.display = 'block';
@@ -68,21 +95,23 @@ async function loadUserTickets() {
         ticketsContainer.innerHTML = '';
         
         const tickets = await api.getUserTickets(userId);
+        console.log('✅ Билеты загружены:', tickets);
         
         ticketsLoading.style.display = 'none';
         
         if (!Array.isArray(tickets) || tickets.length === 0) {
+            console.log('ℹ️ Билеты не найдены');
             ticketsEmpty.style.display = 'block';
             return;
         }
         
-        const validTickets = tickets.filter(t => 
-            t.ticket_status === 'valid' || 
-            t.ticket_status === 'used' || 
-            !t.ticket_status
-        );
+        const validTickets = tickets.filter(t => {
+    const status = t.ticketstatus || t.ticket_status || 'valid';
+    return status === 'valid' || status === 'used';
+});
         
         if (validTickets.length === 0) {
+            console.log('ℹ️ Нет действительных билетов');
             ticketsEmpty.style.display = 'block';
             return;
         }
@@ -91,8 +120,10 @@ async function loadUserTickets() {
             const ticketCard = createTicketCard(ticket);
             ticketsContainer.appendChild(ticketCard);
         });
+        
+        console.log(`✅ Отображено ${validTickets.length} билетов`);
     } catch (error) {
-        console.error('Error loading tickets:', error);
+        console.error('❌ Ошибка загрузки билетов:', error);
         ticketsLoading.style.display = 'none';
         ticketsError.style.display = 'block';
         ticketsError.textContent = `Ошибка загрузки: ${error.message}`;
@@ -100,13 +131,14 @@ async function loadUserTickets() {
 }
 
 
+
 // ===== СОЗДАНИЕ КАРТОЧКИ БИЛЕТА ✨ С СВЁРТЫВАЕМЫМ QR-КОДОМ ✨ =====
 function createTicketCard(ticket) {
     const div = document.createElement('div');
     div.className = 'ticket-card';
     
-    const ticketId = ticket.ticket_id || ticket.id;
-    const status = ticket.ticket_status || 'valid';
+    const ticketId = ticket.ticketid || ticket.ticket_id || ticket.id;
+    const status = ticket.ticketstatus || ticket.ticket_status || 'valid';
     
     const statusClass = `status-${status}`;
     const statusText = {
@@ -115,10 +147,10 @@ function createTicketCard(ticket) {
         'cancelled': 'Отменен'
     }[status] || status;
     
-    const movieTitle = ticket.movie_title || ticket.movie_name || 'Неизвестный фильм';
-    const sessionDateTime = ticket.session_datetime || ticket.session_time || new Date().toISOString();
-    const seatNumber = ticket.seat || ticket.seat_number || 'N/A';
-    const qrCode = ticket.qr_code || ticket.ticket_code || '';
+    const movieTitle = ticket.movietitle || ticket.movie_title || ticket.movie_name || 'Неизвестный фильм';
+    const sessionDateTime = ticket.sessiondatetime || ticket.session_datetime || ticket.sessiontime || ticket.session_time || new Date().toISOString();
+    const seatNumber = ticket.seat || ticket.seatnumber || ticket.seat_number || 'N/A';
+    const qrCode = ticket.qrcode || ticket.qr_code || ticket.ticketcode || '';
     
     const canCancel = status === 'valid';
     
@@ -142,7 +174,7 @@ function createTicketCard(ticket) {
                         style="cursor: pointer; color: #1e3a8a; text-decoration: underline; font-weight: 500;"
                         data-ticket-id="${ticketId}"
                     >
-                        ${qrCode.substring(0, 12)}... ▶
+                        ${qrCode ? qrCode.substring(0, 12) + '...' : 'Нет QR'} ▶
                     </span>
                 </div>
             </div>
@@ -180,6 +212,7 @@ function createTicketCard(ticket) {
 
 
 
+
 // ===== ПЕРЕКЛЮЧЕНИЕ QR-КОДА =====
 function toggleQRCode(element) {
     const qrContainer = element.closest('.card-meta-item').parentElement.parentElement.parentElement.querySelector('.ticket-qr-container');
@@ -193,8 +226,10 @@ function toggleQRCode(element) {
     element.textContent = element.textContent.split(' ')[0] + ' ' + (isHidden ? '▼' : '▶');
 }
 
+
 // Экспортируем функцию глобально
 window.toggleQRCode = toggleQRCode;
+
 
 
 // ===== ОТМЕНА БИЛЕТА =====
@@ -204,7 +239,9 @@ async function cancelTicketHandler(ticketId) {
     }
     
     try {
+        console.log('Отмена билета:', ticketId);
         const result = await api.cancelTicket(ticketId);
+        console.log('✅ Билет отменен:', result);
         showToast(result.message || 'Билет отменен', 'success');
         
         setTimeout(() => {
@@ -212,7 +249,7 @@ async function cancelTicketHandler(ticketId) {
             loadProfileData();
         }, 500);
     } catch (error) {
-        console.error('Error canceling ticket:', error);
+        console.error('❌ Ошибка отмены билета:', error);
         showToast(`Ошибка: ${error.message}`, 'error');
     }
 }
@@ -220,29 +257,42 @@ async function cancelTicketHandler(ticketId) {
 
 
 
+
 // ===== ФОРМАТИРОВАНИЕ ДАТЫ И ВРЕМЕНИ =====
 function formatDateTime(dateTimeString) {
-    const date = new Date(dateTimeString);
-    const options = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    return date.toLocaleDateString('ru-RU', options);
+    if (!dateTimeString) return '';
+    try {
+        const date = new Date(dateTimeString);
+        const options = {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return date.toLocaleDateString('ru-RU', options);
+    } catch (e) {
+        return '';
+    }
 }
+
 
 
 
 function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    if (!dateString) return '';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    } catch (e) {
+        return '';
+    }
 }
+
 
 
 
@@ -260,13 +310,16 @@ function escapeHtml(text) {
 
 
 
+
 // ===== ВЫХОД =====
 function logout() {
     if (confirm('Вы уверены, что хотите выйти?')) {
         api.logout();
+        localStorage.clear();
         window.location.href = 'index.html';
     }
 }
+
 
 
 
@@ -290,6 +343,7 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+
 // ===== НАСТРОЙКА АДМИН КНОПКИ =====
 function setupAdminButton() {
     const adminBtn = document.getElementById('admin-btn');
@@ -298,17 +352,27 @@ function setupAdminButton() {
         return;
     }
     
-    const isAuth = localStorage.getItem('auth_token');
-    const userEmail = localStorage.getItem('user_email'); // ✅ ПРОВЕРЯЕМ EMAIL
+    const isAuth = localStorage.getItem('authtoken');
+    const userEmail = localStorage.getItem('useremail');
     
-    console.log('🔍 Проверка админа:', { isAuth: !!isAuth, userEmail });
+    console.log('🔍 Проверка админа на профиле:', { isAuth: !!isAuth, userEmail });
     
-    // Проверяем по email "root@root"
+    // Проверяем по email "root@root.com"
     if (isAuth && userEmail === 'root@root.com') {
         adminBtn.style.display = 'block';
-        console.log('✅ Админ-панель доступна');
+        console.log('✅ Админ-панель доступна на профиле');
     } else {
         adminBtn.style.display = 'none';
-        console.log('❌ Админ-панель скрыта');
+        console.log('❌ Админ-панель скрыта на профиле');
     }
 }
+
+
+
+
+// ===== ЭКСПОРТ ФУНКЦИЙ ГЛОБАЛЬНО =====
+window.switchTab = switchTab;
+window.cancelTicketHandler = cancelTicketHandler;
+window.logout = logout;
+window.showToast = showToast;
+window.setupAdminButton = setupAdminButton;

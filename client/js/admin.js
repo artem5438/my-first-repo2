@@ -206,7 +206,7 @@ async function loadSessions() {
         <h4>${escapeHtml(session.movie?.title || 'Неизвестный фильм')}</h4>
         <div class="item-meta">📅 ${formatDateTime(session.session_datetime)}</div>
         <div class="item-meta">⏰ ${formatDateTime(session.end_datetime)}</div>
-        <div class="item-meta">🎪 Зал ${hallName}</div>
+        <div class="item-meta">🎪 ${hallName}</div>
         <div class="item-actions">
           <button class="btn-edit" onclick="editSession(${sessionId})">✏️ Редактировать</button>
           <button class="btn-delete" onclick="deleteSession(${sessionId})">🗑️ Удалить</button>

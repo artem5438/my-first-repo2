@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAuthRedirect();
 });
 
+
 // ===== ОБРАБОТЧИК ВХОДА =====
 async function handleLoginSubmit(event) {
     event.preventDefault();
@@ -68,6 +69,7 @@ async function handleLoginSubmit(event) {
         submitBtn.disabled = false;
     }
 }
+
 
 // ===== ОБРАБОТЧИК РЕГИСТРАЦИИ =====
 async function handleRegisterSubmit(event) {
@@ -157,10 +159,11 @@ async function handleRegisterSubmit(event) {
     }
 }
 
+
 // ===== ПРОВЕРКА РЕДИРЕКТА =====
 function checkAuthRedirect() {
-    // Если пользователь уже авторизован, перенаправляем с login/register страниц
-    const token = localStorage.getItem('auth_token');
+    // ✅ ИСПРАВЛЕНО: используем правильный ключ 'authtoken'
+    const token = localStorage.getItem('authtoken');
     const currentPage = window.location.pathname;
     
     if (token && (currentPage.includes('login.html') || currentPage.includes('register.html'))) {
@@ -170,6 +173,7 @@ function checkAuthRedirect() {
         }, 1000);
     }
 }
+
 
 // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
 function showError(message, element) {
@@ -186,6 +190,7 @@ function showError(message, element) {
     }, 5000);
 }
 
+
 function showSuccess(message, element) {
     if (!element) return;
     
@@ -200,6 +205,7 @@ function showSuccess(message, element) {
     }, 5000);
 }
 
+
 // ===== ВЫХОД ИЗ СИСТЕМЫ =====
 function logout() {
     if (confirm('Вы уверены, что хотите выйти?')) {
@@ -207,6 +213,7 @@ function logout() {
         window.location.href = 'index.html';
     }
 }
+
 
 // ===== ГЛОБАЛЬНЫЕ ФУНКЦИИ =====
 window.logout = logout;
