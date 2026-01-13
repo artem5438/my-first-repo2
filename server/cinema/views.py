@@ -27,19 +27,18 @@ from .models import (
 from .serializers import MovieSerializer, SessionSerializer, TicketSerializer, HallSerializer  # Добавлен HallSerializer
 
 # ==================== VIEWSETS (для админ-панели) ====================
-from rest_framework.parsers import MultiPartParser, FormParser  # Добавьте эту строку
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class MovieViewSet(viewsets.ModelViewSet):
     """ViewSet для фильмов - автоматически создает все CRUD методы"""
     queryset = Movie.objects.filter(is_active=True)
     serializer_class = MovieSerializer
-    parser_classes = [MultiPartParser, FormParser]  # ДОБАВЬТЕ ЭТУ СТРОКУ
+    parser_classes = [MultiPartParser, FormParser]
 
 class SessionViewSet(viewsets.ModelViewSet):
     """ViewSet для сеансов - автоматически создает все CRUD методы"""
     queryset = Session.objects.filter(is_active=True)
     serializer_class = SessionSerializer
-    
     def get_queryset(self):
         queryset = super().get_queryset()
         movie_id = self.request.query_params.get('movie_id')

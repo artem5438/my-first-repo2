@@ -10,14 +10,15 @@ document.addEventListener('DOMContentLoaded', function() {
     setupModal();
     setupFilters();
     loadAllMovies();
+    loadHalls(); // Добавляем загрузку залов при инициализации
   }
 });
 
 // ===== ПЕРЕМЕННЫЕ СОСТОЯНИЯ (БЕЗ ДУБЛЕЙ) =====
 let allMovies = [];
+let allHalls = []; // Новая переменная для хранения залов
 let selectedSeatsCarousel = [];
 // currentSessionId объявлен в app.js, не дублируем!
-
 
 // ===== ЗАГРУЗКА ВСЕХ ФИЛЬМОВ =====
 async function loadAllMovies() {
@@ -37,7 +38,6 @@ async function loadAllMovies() {
             <div class="skeleton"></div>
             <div class="skeleton"></div>
         `;
-
 
         console.log('Отправляем запрос API...');
         const moviesData = await api.getMovies();
@@ -123,6 +123,45 @@ async function loadAllMovies() {
     }
 }
 
+// ===== ЗАГРУЗКА ЗАЛОВ =====
+async function loadHalls() {
+    try {
+        const response = await fetch('http://localhost:8000/api/halls/', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        });
+        
+        if (!response.ok) {
+            console.error('❌ Ошибка загрузки залов:', response.status, response.statusText);
+            return;
+        }
+        
+        const data = await response.json();
+        let halls = [];
+        
+        if (Array.isArray(data)) {
+            halls = data;
+        } else if (data.results) {
+            halls = data.results;
+        } else if (data.halls) {
+            halls = data.halls;
+        }
+        
+        allHalls = halls.map(hall => ({
+            id: hall.id || hall.hall_id,
+            name: hall.name || `Зал ${hall.id || hall.hall_id}`
+        }));
+        
+        console.log('✅ Загружено залов:', allHalls.length);
+    } catch (error) {
+        console.error('❌ Ошибка загрузки залов:', error);
+        // Устанавливаем заглушки, если залы не загрузились
+        allHalls = [
+            { id: 1, name: 'Зал 1' },
+            { id: 2, name: 'Зал 2' },
+            { id: 3, name: 'Зал 3' }
+        ];
+    }
+}
 
 // ===== СОЗДАНИЕ КАРТОЧКИ ФИЛЬМА =====
 function createMovieCard(movie) {
@@ -170,7 +209,6 @@ function createMovieCard(movie) {
     
     return card;
 }
-
 
 // ===== ПОКАЗ ИНФОРМАЦИИ О ФИЛЬМЕ =====
 function showMovieModal(movie) {
@@ -231,7 +269,6 @@ function showMovieModal(movie) {
     modal.classList.add('show');
 }
 
-
 // ===== ПОКАЗ СЕАНСОВ ФИЛЬМА =====
 async function viewMovieSessions(event, movieId, movieTitle) {
     event.stopPropagation();
@@ -273,28 +310,29 @@ async function viewMovieSessions(event, movieId, movieTitle) {
         sessionsHTML += '<div class="sessions-list">';
         
         sessions.forEach(session => {
-        const time = session.session_time || session.session_datetime || session.start_time;
-        const hall = session.hall_number || session.hall || session.hall_id || session.cinema_hall || '1';
-        const seats = session.available_seats || session.free_seats || 50;
-        const sessionId = session.id || session.session_id;
-        const price = session.price != null ? `${parseFloat(session.price).toFixed(2)} ₽` : '—';
+            // Получаем название зала из загруженных залов
+            const hallName = getHallName(session.hall_id || session.hall);
+            const time = session.session_time || session.session_datetime || session.start_time;
+            const seats = session.available_seats || session.free_seats || 50;
+            const sessionId = session.id || session.session_id;
+            const price = session.price != null ? `${parseFloat(session.price).toFixed(2)} ₽` : '—';
 
-        sessionsHTML += `
-            <div class="session-card">
-                <div class="session-info">
-                    <div class="session-time">${formatTime(time)}</div>
-                    <div class="session-date">${formatDate(time)}</div>
-                    <div class="session-hall">Зал: ${hall}</div>
-                    <div class="session-seats">Свободных мест: ${seats}</div>
-                    <div class="session-price" style="font-weight: bold; color: var(--primary-color); margin-top: 0.5rem;">
-                        Цена: ${price}
+            sessionsHTML += `
+                <div class="session-card">
+                    <div class="session-info">
+                        <div class="session-time">${formatTime(time)}</div>
+                        <div class="session-date">${formatDate(time)}</div>
+                        <div class="session-hall">Зал: ${hallName}</div>
+                        <div class="session-seats">Свободных мест: ${seats}</div>
+                        <div class="session-price" style="font-weight: bold; color: var(--primary-color); margin-top: 0.5rem;">
+                            Цена: ${price}
+                        </div>
                     </div>
+                    <button class="btn-sessions" onclick="selectSeatsForSession(${sessionId}, '${movieTitle.replace(/'/g, "\\'")}')">
+                        Выбрать места
+                    </button>
                 </div>
-                <button class="btn-sessions" onclick="selectSeatsForSession(${sessionId}, '${movieTitle.replace(/'/g, "\\'")}')">
-                    Выбрать места
-                </button>
-            </div>
-        `;
+            `;
         });
         
         sessionsHTML += '</div>';
@@ -307,6 +345,13 @@ async function viewMovieSessions(event, movieId, movieTitle) {
     }
 }
 
+// ===== ПОЛУЧЕНИЕ НАЗВАНИЯ ЗАЛА =====
+function getHallName(hallId) {
+    if (!hallId) return 'Неизвестный зал';
+    
+    const hall = allHalls.find(h => h.id == hallId);
+    return hall ? hall.name : `Зал ${hallId}`;
+}
 
 // ===== ВЫБОР МЕСТ ДЛЯ СЕАНСА =====
 async function selectSeatsForSession(sessionId, movieTitle) {
@@ -318,7 +363,6 @@ async function selectSeatsForSession(sessionId, movieTitle) {
         alert('Ошибка загрузки мест: ' + error.message);
     }
 }
-
 
 // ===== МОДАЛЬНОЕ ОКНО С МЕСТАМИ (НОВЫЙ ДИЗАЙН, ИСПРАВЛЕНЫ РЯДЫ) =====
 function showSeatsSelectionModal(sessionId, movieTitle, seatsData) {
@@ -501,7 +545,6 @@ function showSeatsSelectionModal(sessionId, movieTitle, seatsData) {
     modal.classList.add('show');
 }
 
-
 // ===== ВЫБОР МЕСТА =====
 function selectSeatCarousel(event, seatId, sessionId) {
     event.preventDefault();
@@ -527,7 +570,6 @@ function selectSeatCarousel(event, seatId, sessionId) {
     updateSelectedSeatsCount();
 }
 
-
 // ===== ОБНОВЛЕНИЕ СЧЕТЧИКА МЕСТ =====
 function updateSelectedSeatsCount() {
     const counter = document.getElementById('selected-seats-count');
@@ -536,14 +578,12 @@ function updateSelectedSeatsCount() {
     }
 }
 
-
 // ===== ПОДТВЕРЖДЕНИЕ ВЫБОРА МЕСТ =====
 async function confirmSeatsSelectionCarousel(sessionId) {
     if (selectedSeatsCarousel.length === 0) {
         alert('Выберите хотя бы одно место');
         return;
     }
-
 
     const userId = localStorage.getItem('user_id');
     if (!userId) {
@@ -552,12 +592,10 @@ async function confirmSeatsSelectionCarousel(sessionId) {
         return;
     }
 
-
     try {
         let successCount = 0;
         let errorCount = 0;
         const errors = [];
-
 
         for (const seatId of selectedSeatsCarousel) {
             try {
@@ -571,7 +609,6 @@ async function confirmSeatsSelectionCarousel(sessionId) {
             }
         }
 
-
         if (successCount > 0 && errorCount === 0) {
             alert(`✅ Успешно куплено ${successCount} билет(ов)!`);
             closeModal();
@@ -584,13 +621,11 @@ async function confirmSeatsSelectionCarousel(sessionId) {
             alert(`❌ Ошибка:\n${errors.join('\n')}`);
         }
 
-
     } catch (error) {
         console.error('Ошибка:', error);
         alert('❌ Ошибка: ' + error.message);
     }
 }
-
 
 // ===== ФОРМАТИРОВАНИЕ ДАТЫ И ВРЕМЕНИ =====
 function formatTime(dateTimeString) {
@@ -605,7 +640,6 @@ function formatTime(dateTimeString) {
     }
 }
 
-
 function formatDate(dateTimeString) {
     if (!dateTimeString) return '';
     try {
@@ -619,7 +653,6 @@ function formatDate(dateTimeString) {
         return '';
     }
 }
-
 
 // ===== УПРАВЛЕНИЕ МОДАЛЬНЫМ ОКНОМ =====
 function setupModal() {
@@ -643,7 +676,6 @@ function setupModal() {
     });
 }
 
-
 function closeModal() {
     const modal = document.getElementById('movie-modal');
     if (modal) {
@@ -652,7 +684,6 @@ function closeModal() {
     selectedSeatsCarousel = [];
     currentSessionId = null;
 }
-
 
 // ===== ФИЛЬТРАЦИЯ ФИЛЬМОВ =====
 function setupFilters() {
@@ -667,7 +698,6 @@ function setupFilters() {
         ratingFilter.addEventListener('change', filterMovies);
     }
 }
-
 
 function filterMovies() {
     const searchInput = document.getElementById('search-input');
@@ -706,7 +736,6 @@ function filterMovies() {
     });
 }
 
-
 // ===== НАСТРОЙКА НАВИГАЦИИ =====
 function setupNavigation() {
     const navLinks = document.querySelectorAll('.nav-link');
@@ -719,7 +748,6 @@ function setupNavigation() {
         });
     });
 }
-
 
 function setupLoginButton() {
     const loginBtn = document.getElementById('login-btn');

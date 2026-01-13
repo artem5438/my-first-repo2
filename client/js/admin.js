@@ -160,53 +160,65 @@ async function loadMovies() {
 
 // ===== ЗАГРУЗКА СЕАНСОВ =====
 async function loadSessions() {
-    try {
-        console.log('🎬 Загрузка сеансов...');
-        const response = await fetch('http://localhost:8000/api/sessions/', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
-        });
-        const data = await response.json();
-        
-        let sessions = [];
-        if (Array.isArray(data)) {
-            sessions = data;
-        } else if (data.results) {
-            sessions = data.results;
-        } else if (data.sessions) {
-            sessions = data.sessions;
-        }
-        
-        const list = document.getElementById('sessions-list');
-        list.innerHTML = '';
-        
-        if (!sessions || sessions.length === 0) {
-            list.innerHTML = '<p style="grid-column: 1/-1; color: #6b7280;">Сеансы не найдены</p>';
-            return;
-        }
-        
-        sessions.forEach(session => {
-            const sessionId = session.id || session.session_id;
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.innerHTML = `
-                <h4>${escapeHtml(session.movie?.title || 'Неизвестный фильм')}</h4>
-                <div class="item-meta">📅 ${formatDateTime(session.session_datetime)}</div>
-                <div class="item-meta">⏰ ${formatDateTime(session.end_datetime)}</div>
-                <div class="item-meta">🎪 Зал ${session.hall?.name || session.hall_id || 'Неизвестный'}</div>
-                <div class="item-actions">
-                    <button class="btn-edit" onclick="editSession(${sessionId})">✏️ Редактировать</button>
-                    <button class="btn-delete" onclick="deleteSession(${sessionId})">🗑️ Удалить</button>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-    } catch (error) {
-        console.error('❌ Ошибка загрузки:', error);
-        document.getElementById('sessions-list').innerHTML = `<p style="color: red; grid-column: 1/-1;">Ошибка: ${error.message}</p>`;
+  try {
+    console.log('🎬 Загрузка сеансов...');
+    const response = await fetch('http://localhost:8000/api/sessions/', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+    });
+    const data = await response.json();
+    let sessions = [];
+    if (Array.isArray(data)) {
+      sessions = data;
+    } else if (data.results) {
+      sessions = data.results;
+    } else if (data.sessions) {
+      sessions = data.sessions;
     }
+    const list = document.getElementById('sessions-list');
+    list.innerHTML = '';
+    if (!sessions || sessions.length === 0) {
+      list.innerHTML = '<p style="grid-column: 1/-1; color: #6b7280;">Сеансы не найдены</p>';
+      return;
+    }
+    sessions.forEach(session => {
+      const sessionId = session.id || session.session_id;
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      
+      // Правильная обработка зала
+      let hallName = 'Неизвестный';
+      if (session.hall) {
+        // Если hall - объект
+        if (typeof session.hall === 'object') {
+          hallName = session.hall.name || session.hall.id || 'Зал без названия';
+        } 
+        // Если hall - строка или число
+        else {
+          hallName = session.hall;
+        }
+      } 
+      // Если есть hall_id, но нет hall
+      else if (session.hall_id) {
+        hallName = `Зал ${session.hall_id}`;
+      }
+      
+      card.innerHTML = `
+        <h4>${escapeHtml(session.movie?.title || 'Неизвестный фильм')}</h4>
+        <div class="item-meta">📅 ${formatDateTime(session.session_datetime)}</div>
+        <div class="item-meta">⏰ ${formatDateTime(session.end_datetime)}</div>
+        <div class="item-meta">🎪 Зал ${hallName}</div>
+        <div class="item-actions">
+          <button class="btn-edit" onclick="editSession(${sessionId})">✏️ Редактировать</button>
+          <button class="btn-delete" onclick="deleteSession(${sessionId})">🗑️ Удалить</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  } catch (error) {
+    console.error('❌ Ошибка загрузки:', error);
+    document.getElementById('sessions-list').innerHTML = `<p style="color: red; grid-column: 1/-1;">Ошибка: ${error.message}</p>`;
+  }
 }
-
-// ===== ЗАПОЛНЕНИЕ DROPDOWN =====
 // ===== ЗАПОЛНЕНИЕ ФИЛЬМОВ =====
 async function populateMovieSelect() {
     try {
@@ -248,52 +260,37 @@ async function populateMovieSelect() {
 
 // ===== ЗАПОЛНЕНИЕ ЗАЛОВ =====
 async function populateHallSelect() {
-    try {
-        const response = await fetch('http://localhost:8000/api/halls/', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
-        });
-        const data = await response.json();
-        
-        let halls = [];
-        if (Array.isArray(data)) {
-            halls = data;
-        } else if (data.results) {
-            halls = data.results;
-        } else if (data.halls) {
-            halls = data.halls;
-        }
-        
-        const select = document.getElementById('session-hall');
-        select.innerHTML = '<option value="">Выберите зал</option>';
-        
-        halls.forEach(hall => {
-            const hallId = hall.id || hall.hall_id;
-            const option = document.createElement('option');
-            option.value = hallId;
-            option.textContent = `Зал ${hall.name || hallId}`;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error loading halls:', error);
-        const select = document.getElementById('session-hall');
-        select.innerHTML = `
-            <option value="">⚠️ Залы не загружены</option>
-            <option value="0">⚠️ Проверьте сервер (нет эндпоинта /api/halls/)</option>
-            <option value="1">Зал 1 (тестовый)</option>
-            <option value="2">Зал 2 (тестовый)</option>
-            <option value="3">Зал 3 (тестовый)</option>
-        `;
-        
-        // Добавляем сообщение о том, что нужно добавить залы
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-error';
-        alertDiv.textContent = '⚠️ Ошибка загрузки залов: эндпоинт /api/halls/ не настроен. Проверьте views.py и urls.py.';
-        const content = document.querySelector('.admin-content');
-        if (content) {
-            content.insertBefore(alertDiv, content.firstChild);
-            setTimeout(() => alertDiv.remove(), 4000);
-        }
+  try {
+    const response = await fetch('http://localhost:8000/api/halls/', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+    });
+    const data = await response.json();
+    let halls = [];
+    if (Array.isArray(data)) {
+      halls = data;
+    } else if (data.results) {
+      halls = data.results;
+    } else if (data.halls) {
+      halls = data.halls;
     }
+    const select = document.getElementById('session-hall');
+    select.innerHTML = '<option value="">Выберите зал</option>';
+    halls.forEach(hall => {
+      const hallId = hall.id || hall.hall_id;
+      const option = document.createElement('option');
+      option.value = hallId;
+      option.textContent = `Зал ${hall.name || hallId}`;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error loading halls:', error);
+    const select = document.getElementById('session-hall');
+    select.innerHTML = `
+      <option value="">Ошибка загрузки залов</option>
+      <option value="1">Зал 1</option>
+      <option value="2">Зал 2</option>
+    `;
+  }
 }
 
 // ===== ОБРАБОТЧИК ФОРМ =====
