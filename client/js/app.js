@@ -265,7 +265,7 @@ function showSessionsModal(movieId, sessionsData) {
                 <div class="session-info">
                     <div class="session-time">${formatTime(time)}</div>
                     <div class="session-date">${formatDate(time)}</div>
-                    <div class="session-hall">Зал: ${hall}</div>
+                    <div class="session-hall">${hall}</div>
                     <div class="session-seats">Свободных мест: ${seats}</div>
                     <div class="session-price" style="font-weight: bold; color: var(--primary-color); margin-top: 0.5rem;">
                         Цена: ${price} ₽
