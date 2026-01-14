@@ -1,39 +1,33 @@
-# urls_working.py - РАБОЧИЙ ВАРИАНТ
-# Путь: server/nora_django/urls.py
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
+
 from cinema.views import (
     MovieViewSet, SessionViewSet, TicketListView,
     get_session_seats, register, login, get_profile,
-    buy_ticket, get_user_tickets, cancel_ticket, get_points_balance, 
-    qr_code_image, ticket_pdf, admin_login_check, HallViewSet  # Добавлен HallViewSet
+    buy_ticket, get_user_tickets, cancel_ticket, get_points_balance,
+    qr_code_image, ticket_pdf, admin_login_check, HallViewSet,
+    get_reports  # ← ДОБАВЛЕНА НОВАЯ ФУНКЦИЯ
 )
 
-# Создаем router для ViewSets
+# Router для ViewSets
 router = DefaultRouter()
 router.register(r'api/movies', MovieViewSet, basename='movie')
 router.register(r'api/sessions', SessionViewSet, basename='session')
-router.register(r'api/halls', HallViewSet, basename='hall')  # НОВЫЙ РЕГИСТРАТОР
+router.register(r'api/halls', HallViewSet, basename='hall')
 
 urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
-
-    #admin-check for panel
-    path('api/admin-check/', admin_login_check, name='admin_check'),
+    path('api/admin-check', admin_login_check, name='admin-check'),
     
-    # ===== ВАРИАНТ 1: СПЕЦИАЛЬНЫЕ URL'Ы ДО ROUTER =====
-    # ВАЖНО: эти URL'ы ДОЛЖНЫ быть ДО include(router.urls)
-    # Иначе router перехватит их раньше
-    path('api/movies/create/', MovieViewSet.as_view({'post': 'create', 'get': 'list'}), name='movie-create'),
-    path('api/sessions/create/', SessionViewSet.as_view({'post': 'create', 'get': 'list'}), name='session-create'),
-    
-    # Подключаем все маршруты из router (автоматически создаст все CRUD endpoints)
+    # Router для CRUD операций
     path('', include(router.urls)),
+    
+    # API - Отчёты (НОВЫЙ МАРШРУТ)
+    path('api/reports/', get_reports, name='reports'),
     
     # API - Билеты
     path('api/tickets/', TicketListView.as_view(), name='ticket-list'),
@@ -43,7 +37,7 @@ urlpatterns = [
     path('api/tickets/cancel/', cancel_ticket, name='cancel-ticket'),
     path('api/ticket/pdf/<str:qr_code>/', ticket_pdf, name='ticket-pdf'),
     
-    # QR коды
+    # API - QR коды
     path('qr/<str:qr_code>/', qr_code_image, name='qr-code-image'),
     
     # API - Аутентификация
@@ -53,5 +47,8 @@ urlpatterns = [
     
     # API - Баллы
     path('api/points/', get_points_balance, name='points-balance'),
+]
 
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Медиафайлы
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -26,6 +26,7 @@
         </div>
     </header>
 
+
     <!-- MAIN CONTENT -->
     <main class="admin-container" style="padding: 2rem 0; max-width: 1400px; margin: 0 auto;">
         <!-- SIDEBAR -->
@@ -39,16 +40,19 @@
                     🎫 Сеансы
                 </button>
                 <button class="admin-menu-btn" onclick="switchAdminTab('reports')"> 
-                    📄 Отчёты
+                    📊 Отчёты
                 </button>
             </div>
         </aside>
+    
+
 
         <!-- CONTENT -->
         <section class="admin-content">
             <!-- MOVIES SECTION -->
             <div id="movies-section" class="admin-section active">
                 <h2 class="section-title">Управление Фильмами</h2>
+
 
                 <!-- ADD/EDIT FORM -->
                 <div style="background: #f9fafb; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
@@ -60,10 +64,12 @@
                             <input type="text" id="movie-title" class="form-input" placeholder="Введите название" required>
                         </div>
 
+
                         <div class="form-group">
                             <label class="form-label">Описание</label>
                             <textarea id="movie-description" class="form-textarea" placeholder="Введите описание фильма"></textarea>
                         </div>
+
 
                         <div class="form-row">
                             <div class="form-group">
@@ -75,6 +81,7 @@
                                 <input type="number" id="movie-duration" class="form-input" placeholder="Например: 120" required>
                             </div>
                         </div>
+
 
                         <div class="form-row">
                             <div class="form-group">
@@ -89,13 +96,14 @@
                                 </select>
                             </div>
                             <div class="form-group">
-    <label class="form-label">Постер фильма</label>
-    <input type="file" id="movie-poster" class="form-input" accept="image/*">
-    <div id="poster-preview" style="margin-top: 1rem; display: none;">
-        <img id="poster-preview-img" style="max-width: 200px; border-radius: 6px;">
-    </div>
-</div>
+                                <label class="form-label">Постер фильма</label>
+                                <input type="file" id="movie-poster" class="form-input" accept="image/*">
+                                <div id="poster-preview" style="margin-top: 1rem; display: none;">
+                                    <img id="poster-preview-img" style="max-width: 200px; border-radius: 6px;">
+                                </div>
+                            </div>
                         </div>
+
 
                         <div class="form-row">
                             <div class="form-group">
@@ -108,12 +116,14 @@
                             </div>
                         </div>
 
+
                         <div>
                             <button type="submit" class="btn-submit">💾 Сохранить фильм</button>
                             <button type="reset" class="btn-reset" onclick="resetMovieForm()">🔄 Очистить</button>
                         </div>
                     </form>
                 </div>
+
 
                 <!-- MOVIES LIST -->
                 <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Список фильмов</h3>
@@ -122,9 +132,11 @@
                 </div>
             </div>
 
+
             <!-- SESSIONS SECTION -->
             <div id="sessions-section" class="admin-section">
                 <h2 class="section-title">Управление Сеансами</h2>
+
 
                 <!-- ADD/EDIT FORM -->
                 <div style="background: #f9fafb; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
@@ -146,6 +158,7 @@
                             </div>
                         </div>
 
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Дата и время начала</label>
@@ -161,6 +174,7 @@
                             <input type="number" id="session-price" class="form-input" min="0" step="0.01" required>
                         </div>
 
+
                         <div>
                             <button type="submit" class="btn-submit">💾 Сохранить сеанс</button>
                             <button type="reset" class="btn-reset" onclick="resetSessionForm()">🔄 Очистить</button>
@@ -169,14 +183,160 @@
                 </div>
                 
 
+
                 <!-- SESSIONS LIST -->
                 <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Список сеансов</h3>
                 <div id="sessions-list" class="sessions-list">
                     <div class="loading">Загрузка сеансов...</div>
                 </div>
             </div>
+
+
+            <!-- ======================== ОТЧЁТЫ ======================== -->
+            <div id="reports-section" class="admin-section">
+                <h2 class="section-title">📊 Отчёты</h2>
+
+                <div class="reports-tabs">
+                    <button class="report-tab-btn active" data-tab="overview" onclick="switchReportTab('overview')">Обзор</button>
+                    <button class="report-tab-btn" data-tab="popular-movies" onclick="switchReportTab('popular-movies')">Популярные фильмы</button>
+                    <button class="report-tab-btn" data-tab="halls" onclick="switchReportTab('halls')">Загруженность залов</button>
+                    <button class="report-tab-btn" data-tab="refunds" onclick="switchReportTab('refunds')">Возвращаемость билетов</button>
+                </div>
+
+                <!-- ===== ОБЗОР =====  -->
+                <div id="overview-tab" class="report-content active">
+                    <div class="reports-grid">
+                        <!-- Карточка: Общая статистика -->
+                        <div class="stat-card stat-card-primary">
+                            <h3>💰 Общая выручка</h3>
+                            <p class="stat-value" id="total-revenue">₽ 0</p>
+                            <p class="stat-label">за все продажи</p>
+                        </div>
+
+                        <!-- Карточка: Всего билетов -->
+                        <div class="stat-card stat-card-blue">
+                            <h3>🎫 Билеты (всего)</h3>
+                            <p class="stat-value" id="total-tickets">0</p>
+                            <p class="stat-label">продано и отменено</p>
+                        </div>
+
+                        <!-- Карточка: Действительные -->
+                        <div class="stat-card stat-card-success">
+                            <h3>✅ Действительные</h3>
+                            <p class="stat-value" id="valid-tickets">0</p>
+                            <p class="stat-label">активные билеты</p>
+                        </div>
+
+                        <!-- Карточка: Отменённые -->
+                        <div class="stat-card stat-card-danger">
+                            <h3>❌ Отменённые</h3>
+                            <p class="stat-value" id="cancelled-tickets">0</p>
+                            <p class="stat-label">возвращённые билеты</p>
+                        </div>
+
+                        <!-- Карточка: Процент возвратов -->
+                        <div class="stat-card stat-card-warning">
+                            <h3>📉 Процент возвратов</h3>
+                            <p class="stat-value" id="refund-rate">0%</p>
+                            <p class="stat-label">от всех билетов</p>
+                        </div>
+                    </div>
+
+                    <!-- Быстрые ссылки на детали -->
+                    <div class="report-quick-links">
+                        <h3>Быстрый переход</h3>
+                        <button class="quick-link-btn" onclick="switchReportTab('popular-movies')">
+                            🎬 Самые популярные фильмы
+                        </button>
+                        <button class="quick-link-btn" onclick="switchReportTab('halls')">
+                            🏛️ Загруженность залов
+                        </button>
+                        <button class="quick-link-btn" onclick="switchReportTab('refunds')">
+                            🔄 Статистика возвратов
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ===== ПОПУЛЯРНЫЕ ФИЛЬМЫ ===== -->
+                <div id="popular-movies-tab" class="report-content">
+                    <div class="report-header">
+                        <h3>🎬 Топ популярных фильмов</h3>
+                        <p class="report-subtitle">Фильмы отсортированы по количеству проданных билетов</p>
+                    </div>
+
+                    <div class="report-table-container">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Фильм</th>
+                                    <th>Режиссёр</th>
+                                    <th>Рейтинг</th>
+                                    <th>Билетов продано</th>
+                                    <th>Выручка (₽)</th>
+                                    <th>Сеансов</th>
+                                </tr>
+                            </thead>
+                            <tbody id="popular-movies-tbody">
+                                <tr>
+                                    <td colspan="6" class="loading">Загрузка данных...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ===== ЗАГРУЖЕННОСТЬ ЗАЛОВ ===== -->
+                <div id="halls-tab" class="report-content">
+                    <div class="report-header">
+                        <h3>🏛️ Загруженность кинозалов</h3>
+                        <p class="report-subtitle">Процент занятых мест в каждом зале</p>
+                    </div>
+
+                    <div class="halls-grid">
+                        <div id="halls-content">
+                            <!-- Динамически заполняется -->
+                            <p class="loading">Загрузка данных...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== ВОЗВРАЩАЕМОСТЬ БИЛЕТОВ ===== -->
+                <div id="refunds-tab" class="report-content">
+                    <div class="report-header">
+                        <h3>🔄 Статистика возвращаемости билетов</h3>
+                        <p class="report-subtitle">Анализ отмён и возвратов по фильмам</p>
+                    </div>
+
+                    <div class="report-table-container">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Фильм</th>
+                                    <th>Всего билетов</th>
+                                    <th>Отменено</th>
+                                    <th>% возвратов</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody id="refunds-tbody">
+                                <tr>
+                                    <td colspan="5" class="loading">Загрузка данных...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Кнопка для обновления -->
+                <div class="report-actions">
+                    <button id="refresh-reports-btn" class="btn-submit" onclick="loadReports()">
+                        🔄 Обновить отчёты
+                    </button>
+                </div>
+            </div>
         </section>
     </main>
+
 
     <!-- FOOTER -->
     <footer class="footer">
@@ -185,6 +345,7 @@
         </div>
     </footer>
 
+
 <!-- МОДАЛЬНОЕ ОКНО -->
 <div id="movie-modal" class="modal">
   <div class="modal-content">
@@ -192,6 +353,7 @@
     <div id="modal-body"></div>
   </div>
 </div>
+
 
     <script src="js/api.js"></script>
     <script src="js/admin.js"></script>

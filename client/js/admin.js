@@ -629,6 +629,161 @@ function resetSessionForm() {
     document.getElementById('session-form').reset();
     delete document.getElementById('session-form').dataset.sessionId;
 }
+// ==================== ОТЧЁТЫ ====================
+// Переключение вкладок отчётов
+function switchReportTab(tabName) {
+  // Скрываем все вкладки
+  const allTabs = document.querySelectorAll('.report-content');
+  allTabs.forEach(tab => tab.classList.remove('active'));
+
+  // Убираем активный класс со всех кнопок
+  const allButtons = document.querySelectorAll('.report-tab-btn');
+  allButtons.forEach(btn => btn.classList.remove('active'));
+
+  // Показываем нужную вкладку
+  const tabMap = {
+    'overview': 'overview-tab',
+    'popular-movies': 'popular-movies-tab',
+    'halls': 'halls-tab',
+    'refunds': 'refunds-tab'
+  };
+
+  const tabElement = document.getElementById(tabMap[tabName]);
+  if (tabElement) {
+    tabElement.classList.add('active');
+  }
+
+  // Активируем кнопку
+  const button = document.querySelector(`[data-tab="${tabName}"]`);
+  if (button) {
+    button.classList.add('active');
+  }
+
+  // Загружаем данные при первом клике
+  if (tabName === 'popular-movies' && document.getElementById('popular-movies-tbody').querySelector('.loading')) {
+    loadReports();
+  }
+}
+
+// Загрузка всех отчётов
+async function loadReports() {
+  try {
+    const response = await fetch('http://localhost:8000/api/reports/');
+    const data = await response.json();
+
+    // Заполнение вкладки "Обзор"
+    document.getElementById('total-revenue').textContent = `₽ ${Math.floor(data.refund_statistics.total_revenue).toLocaleString('ru-RU')}`;
+    document.getElementById('total-tickets').textContent = data.refund_statistics.total_tickets;
+    document.getElementById('valid-tickets').textContent = data.refund_statistics.valid_tickets;
+    document.getElementById('cancelled-tickets').textContent = data.refund_statistics.cancelled_tickets;
+    document.getElementById('refund-rate').textContent = `${data.refund_statistics.refund_rate_percent}%`;
+
+    // Заполнение таблицы "Популярные фильмы"
+    const popularMoviesTbody = document.getElementById('popular-movies-tbody');
+    popularMoviesTbody.innerHTML = '';
+
+    data.popular_movies.forEach(movie => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${movie.title}</strong></td>
+        <td>${movie.director || '-'}</td>
+        <td><span class="age-badge">${movie.age_rating}</span></td>
+        <td>${movie.tickets_sold}</td>
+        <td><strong>₽ ${Math.floor(movie.revenue).toLocaleString('ru-RU')}</strong></td>
+        <td>${movie.sessions_count}</td>
+      `;
+      popularMoviesTbody.appendChild(row);
+    });
+
+    if (data.popular_movies.length === 0) {
+      popularMoviesTbody.innerHTML = '<tr><td colspan="6" class="loading">Нет данных о продажах</td></tr>';
+    }
+
+    // Заполнение "Загруженность залов"
+    const hallsContent = document.getElementById('halls-content');
+    hallsContent.innerHTML = '';
+
+    data.halls_occupancy.forEach(hall => {
+      const hallCard = document.createElement('div');
+      hallCard.className = 'hall-card';
+      hallCard.innerHTML = `
+        <h4>${hall.name}</h4>
+        <div class="hall-stats">
+          <div class="hall-stat-item">
+            <span class="hall-stat-label">Вместимость</span>
+            <span class="hall-stat-value">${hall.capacity}</span>
+          </div>
+          <div class="hall-stat-item">
+            <span class="hall-stat-label">Мест всего</span>
+            <span class="hall-stat-value">${hall.total_seats}</span>
+          </div>
+          <div class="hall-stat-item">
+            <span class="hall-stat-label">Занято</span>
+            <span class="hall-stat-value">${hall.sold_seats + hall.reserved_seats}</span>
+          </div>
+          <div class="hall-stat-item">
+            <span class="hall-stat-label">Свободно</span>
+            <span class="hall-stat-value">${hall.free_seats}</span>
+          </div>
+        </div>
+        <div class="occupancy-bar">
+          <div class="occupancy-fill" style="width: ${hall.occupancy_percent}%"></div>
+        </div>
+        <div class="occupancy-text">
+          Загруженность: <strong>${hall.occupancy_percent}%</strong>
+        </div>
+      `;
+      hallsContent.appendChild(hallCard);
+    });
+
+    // Заполнение таблицы "Возвращаемость"
+    const refundsTableBody = document.getElementById('refunds-tbody');
+    refundsTableBody.innerHTML = '';
+
+    data.movie_refunds.forEach(movie => {
+      const refundPercent = movie.refund_percent;
+      let statusClass = 'refund-status-good';
+      let statusText = '✅ Хорошо';
+
+      if (refundPercent > 15) {
+        statusClass = 'refund-status-critical';
+        statusText = '⚠️ Критично';
+      } else if (refundPercent > 5) {
+        statusClass = 'refund-status-warning';
+        statusText = '⚠️ Высоко';
+      }
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${movie.title}</strong></td>
+        <td>${movie.total_tickets}</td>
+        <td>${movie.cancelled_tickets}</td>
+        <td><strong>${movie.refund_percent}%</strong></td>
+        <td><span class="${statusClass}">${statusText}</span></td>
+      `;
+      refundsTableBody.appendChild(row);
+    });
+
+    if (data.movie_refunds.length === 0) {
+      refundsTableBody.innerHTML = '<tr><td colspan="5" class="loading">Нет данных о возвратах</td></tr>';
+    }
+
+    // Показываем сообщение об успешном обновлении
+    const btnRefresh = document.getElementById('refresh-reports-btn');
+    if (btnRefresh) {
+      const originalText = btnRefresh.textContent;
+      btnRefresh.textContent = '✅ Обновлено!';
+      setTimeout(() => {
+        btnRefresh.textContent = originalText;
+      }, 2000);
+    }
+
+  } catch (error) {
+    console.error('Ошибка загрузки отчётов:', error);
+    showAlert('Ошибка при загрузке отчётов: ' + error.message, 'error');
+  }
+}
+
 
 // Export
 window.switchAdminTab = switchAdminTab;
@@ -638,3 +793,5 @@ window.editSession = editSession;
 window.deleteSession = deleteSession;
 window.resetMovieForm = resetMovieForm;
 window.resetSessionForm = resetSessionForm;
+window.switchReportTab = switchReportTab;
+window.loadReports = loadReports;

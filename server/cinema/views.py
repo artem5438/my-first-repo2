@@ -19,12 +19,11 @@ from io import BytesIO
 import io
 import os
 
-
 from .models import (
     User, Movie, Session, Ticket, Order, Hall, Seat, SessionSeat,
     Genre, UserPointsBalance, PointsTransaction, Cancellation
 )
-from .serializers import MovieSerializer, SessionSerializer, TicketSerializer, HallSerializer  # Добавлен HallSerializer
+from .serializers import MovieSerializer, SessionSerializer, TicketSerializer, HallSerializer
 
 # ==================== VIEWSETS (для админ-панели) ====================
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -46,7 +45,7 @@ class SessionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(movie_id=movie_id)
         return queryset
 
-class HallViewSet(viewsets.ReadOnlyModelViewSet):  # НОВЫЙ ВИД
+class HallViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для залов"""
     queryset = Hall.objects.filter(is_active=True)
     serializer_class = HallSerializer
@@ -67,26 +66,21 @@ def admin_login_check(request):
     except Exception:
         return JsonResponse({'error': 'Ошибка запроса'}, status=400)
 
-# ==================== СТАРЫЕ VIEWS (для остального функционала) ====================
+# ==================== СТАРЫЕ VIEWS ====================
 
-# Билеты
 class TicketListView(generics.ListAPIView):
     queryset = Ticket.objects.filter(ticket_status='valid')
     serializer_class = TicketSerializer
 
-# Места и сеансы
 @api_view(['GET'])
 def get_session_seats(request, session_id):
     """Получить места для сеанса"""
     try:
         session = Session.objects.get(session_id=session_id)
-        
-        # Получаем все места в зале
         seats = Seat.objects.filter(hall_id=session.hall_id).order_by('row_number', 'seat_number')
         
         seat_data = []
         for seat in seats:
-            # Проверяем статус места на этом сеансе
             session_seat = SessionSeat.objects.filter(
                 session_id=session_id,
                 seat_id=seat.seat_id
@@ -114,14 +108,12 @@ def get_session_seats(request, session_id):
     except Session.DoesNotExist:
         return Response({'error': 'Сеанс не найден'}, status=status.HTTP_404_NOT_FOUND)
 
-# Регистрация
 @api_view(['POST'])
 def register(request):
     """Регистрация нового пользователя"""
     try:
         data = request.data
         
-        # Проверяем обязательные поля
         required_fields = ['email', 'password', 'full_name', 'birth_date']
         for field in required_fields:
             if field not in data:
@@ -130,14 +122,12 @@ def register(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
-        # Проверяем что email уникален
         if User.objects.filter(email=data['email']).exists():
             return Response(
                 {'error': 'Пользователь с этим email уже существует'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Создаем пользователя
         user = User.objects.create(
             email=data['email'],
             password_hash=make_password(data['password']),
@@ -147,7 +137,6 @@ def register(request):
             is_active=True
         )
         
-        # Создаем баланс баллов
         UserPointsBalance.objects.create(user=user, current_points=0)
         
         return Response({
@@ -160,7 +149,6 @@ def register(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-# Вход
 @api_view(['POST'])
 def login(request):
     """Вход пользователя"""
@@ -173,7 +161,6 @@ def login(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Ищем пользователя
         user = User.objects.filter(email=data['email']).first()
         
         if not user or not check_password(data['password'], user.password_hash):
@@ -182,7 +169,6 @@ def login(request):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
-        # Генерируем токен
         token = f"token_{user.user_id}_{datetime.now().timestamp()}"
         
         return Response({
@@ -196,7 +182,6 @@ def login(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-# Профиль
 @api_view(['GET'])
 def get_profile(request):
     """Получить профиль пользователя"""
@@ -224,7 +209,6 @@ def get_profile(request):
     except User.DoesNotExist:
         return Response({'error': 'Пользователь не найден'}, status=status.HTTP_404_NOT_FOUND)
 
-# Купить билет
 @api_view(['POST'])
 @transaction.atomic
 def buy_ticket(request):
@@ -244,13 +228,11 @@ def buy_ticket(request):
         session_id = data['session_id']
         seat_id = data['seat_id']
         
-        # Получаем объекты
         user = User.objects.get(user_id=user_id)
         session = Session.objects.get(session_id=session_id)
         seat = Seat.objects.get(seat_id=seat_id)
         movie = session.movie
         
-        # Проверяем возраст пользователя
         birth_date = user.birth_date
         today = datetime.now().date()
         age = today.year - birth_date.year - (
@@ -267,7 +249,6 @@ def buy_ticket(request):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Проверяем статус места
         session_seat = SessionSeat.objects.filter(
             session_id=session_id,
             seat_id=seat_id
@@ -279,13 +260,12 @@ def buy_ticket(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Создаем заказ и билет
         if session.price is None:
             return Response(
                 {'error': 'Цена для этого сеанса не установлена'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        ticket_price = session.price  # Цена билета
+        ticket_price = session.price
         
         order = Order.objects.create(
             user=user,
@@ -293,7 +273,6 @@ def buy_ticket(request):
             order_status='completed'
         )
         
-        # Генерируем QR-код
         qr_code = str(uuid.uuid4())  
         ticket = Ticket.objects.create(
             order=order,
@@ -302,7 +281,6 @@ def buy_ticket(request):
             qr_code=qr_code,
         )
         
-        # Обновляем статус места
         if not session_seat:
             session_seat = SessionSeat.objects.create(
                 session=session,
@@ -315,13 +293,11 @@ def buy_ticket(request):
             session_seat.sold_at = datetime.now()
             session_seat.save()
         
-        # Начисляем баллы (!!!10 за 100 рублей!!!)
         points_earned = int(ticket_price / 100 * 10)
         points_balance = UserPointsBalance.objects.get(user=user)
         points_balance.current_points += points_earned
         points_balance.save()
         
-        # Записываем транзакцию баллов
         expiry_date = datetime.now().date() + timedelta(days=30)
         PointsTransaction.objects.create(
             user=user,
@@ -332,7 +308,6 @@ def buy_ticket(request):
             description=f'Покупка билета на {movie.title}'
         )
         
-        # Уменьшаем количество доступных мест
         session.available_seats -= 1
         session.save()
         
@@ -357,8 +332,6 @@ def buy_ticket(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-#Логика qr-кодов
-
 @api_view(['GET'])
 def qr_code_image(request, qr_code):
     try:
@@ -366,21 +339,17 @@ def qr_code_image(request, qr_code):
     except Ticket.DoesNotExist:
         return Response({'error': 'QR-код не найден'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Формируем URL для PDF (пока заглушка)
     target_url = request.build_absolute_uri(f"/api/ticket/pdf/{qr_code}/")
 
-    # Генерация QR
     qr = qrcode.QRCode(version=1, box_size=8, border=4)
     qr.add_data(target_url)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
 
-    # Сохраняем в буфер
     buffer = BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
 
-    # Возвращаем как файл через DRF
     return HttpResponse(buffer.getvalue(), content_type="image/png")
 
 @api_view(['GET'])
@@ -392,12 +361,10 @@ def ticket_pdf(request, qr_code):
     except Ticket.DoesNotExist:
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Используем io.BytesIO явно
     pdf_buffer = io.BytesIO()
     p = canvas.Canvas(pdf_buffer, pagesize=A5)
     width, height = A5
 
-    # === Оформление ===
     p.setFont("Helvetica-Bold", 18)
     p.drawString(50, height - 60, "NORA CINEMA TICKET")
     p.rect(40, height - 75, width - 80, 30, fill=0)
@@ -415,7 +382,6 @@ def ticket_pdf(request, qr_code):
     y -= line_height
     p.drawString(50, y, f"Status: {ticket.ticket_status}")
 
-    # === QR-код ===
     qr_url = django_request.build_absolute_uri(f"/api/ticket/pdf/{qr_code}/")
     qr = qrcode.QRCode(version=1, box_size=2, border=1)
     qr.add_data(qr_url)
@@ -484,7 +450,6 @@ def get_user_tickets(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-# Отменить билет
 @api_view(['POST'])
 @transaction.atomic
 def cancel_ticket(request):
@@ -501,7 +466,6 @@ def cancel_ticket(request):
         ticket = Ticket.objects.get(ticket_id=data['ticket_id'])
         session = ticket.session
         
-        # Проверяем, что сеанс ещё не начался (>30 минут)
         now = datetime.now()
         time_until_session = session.session_datetime.replace(tzinfo=None) - now
         
@@ -511,12 +475,10 @@ def cancel_ticket(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Отмечаем билет как отменённый
         ticket.ticket_status = 'cancelled'
         ticket.is_valid = False
         ticket.save()
         
-        # Освобождаем место
         session_seat = SessionSeat.objects.get(
             session_id=session.session_id,
             seat_id=ticket.seat_id
@@ -525,21 +487,17 @@ def cancel_ticket(request):
         session_seat.sold_at = None
         session_seat.save()
         
-        # Увеличиваем доступные места
         session.available_seats += 1
         session.save()
         
-        # КОСТЫЛЬ: не отнимаем баллы, если их нет (баланс <= 0)
         points_earned = int(ticket.order.total_price / 100 * 10)
         points_balance = UserPointsBalance.objects.get(user=ticket.order.user)
         
         if points_balance.current_points > 0:
-            # Отнимаем, но не больше, чем есть
             actual_deduction = min(points_earned, points_balance.current_points)
             points_balance.current_points -= actual_deduction
             points_balance.save()
             
-            # Записываем транзакцию возврата
             PointsTransaction.objects.create(
                 user=ticket.order.user,
                 points_amount=actual_deduction,
@@ -547,10 +505,8 @@ def cancel_ticket(request):
                 description=f'Отмена начисления за отмену билета на {session.movie.title}'
             )
         else:
-            # Баланс 0 или меньше — ничего не делаем
             actual_deduction = 0
 
-        # Создаем запись об отмене
         Cancellation.objects.create(
             ticket=ticket,
             reason='Пользователь отменил билет',
@@ -559,7 +515,7 @@ def cancel_ticket(request):
         
         return Response({
             'message': 'Билет успешно отменен',
-            'refunded_points': actual_deduction  # сколько реально списано
+            'refunded_points': actual_deduction
         }, status=status.HTTP_200_OK)
     
     except Ticket.DoesNotExist:
@@ -567,7 +523,6 @@ def cancel_ticket(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-# Получить баланс баллов
 @api_view(['GET'])
 def get_points_balance(request):
     """Получить баланс баллов пользователя"""
@@ -590,4 +545,146 @@ def get_points_balance(request):
         return Response(
             {'error': 'Баланс баллов не найден'},
             status=status.HTTP_404_NOT_FOUND
+        )
+
+# ==================== ОТЧЁТЫ (для админ-панели) ====================
+from django.db.models import Count, Q, Sum, F, Case, When, FloatField
+
+@csrf_exempt
+@api_view(['GET'])
+def get_reports(request):
+    """Получить все отчёты: популярные фильмы, загруженность залов, возвращаемость билетов"""
+    try:
+        # ===== ПОПУЛЯРНЫЕ ФИЛЬМЫ =====
+        popular_movies = Movie.objects.filter(
+            is_active=True
+        ).annotate(
+            tickets_sold=Count(
+                'session__ticket',
+                filter=Q(session__ticket__ticket_status='valid')
+            ),
+            revenue=Sum(
+                'session__ticket__order__total_price',
+                filter=Q(session__ticket__ticket_status='valid')
+            ),
+            sessions_count=Count('session')
+        ).filter(
+            tickets_sold__gt=0
+        ).order_by('-tickets_sold')[:10]
+
+        popular_movies_data = []
+        for movie in popular_movies:
+            popular_movies_data.append({
+                'movie_id': movie.movie_id,
+                'title': movie.title,
+                'director': movie.director,
+                'tickets_sold': movie.tickets_sold or 0,
+                'revenue': float(movie.revenue) if movie.revenue else 0,
+                'sessions_count': movie.sessions_count,
+                'age_rating': movie.age_rating,
+            })
+
+        # ===== ЗАГРУЖЕННОСТЬ ЗАЛОВ =====
+        halls_stats = Hall.objects.filter(
+            is_active=True
+        ).annotate(
+            total_seats=Count('seat'),
+            sold_seats=Count(
+                'seat__sessionseat',
+                filter=Q(seat__sessionseat__status='sold')
+            ),
+            reserved_seats=Count(
+                'seat__sessionseat',
+                filter=Q(seat__sessionseat__status='reserved')
+            ),
+            sessions_count=Count(
+                'session',
+                filter=Q(session__is_active=True)
+            )
+        ).order_by('hall_id')
+
+        halls_data = []
+        for hall in halls_stats:
+            total = hall.total_seats or 1
+            sold = hall.sold_seats or 0
+            reserved = hall.reserved_seats or 0
+            free = max(0, total - sold - reserved)
+            occupancy_percent = int((sold / total * 100)) if total > 0 else 0
+
+            halls_data.append({
+                'hall_id': hall.hall_id,
+                'name': hall.name,
+                'capacity': hall.capacity,
+                'total_seats': total,
+                'sold_seats': sold,
+                'reserved_seats': reserved,
+                'free_seats': free,
+                'occupancy_percent': occupancy_percent,
+                'sessions_count': hall.sessions_count,
+            })
+
+        # ===== СТАТИСТИКА ВОЗВРАЩАЕМОСТИ БИЛЕТОВ =====
+        total_tickets = Ticket.objects.count()
+        cancelled_tickets = Ticket.objects.filter(
+            ticket_status='cancelled'
+        ).count()
+        valid_tickets = Ticket.objects.filter(
+            ticket_status='valid'
+        ).count()
+
+        refund_rate = 0
+        if total_tickets > 0:
+            refund_rate = int((cancelled_tickets / total_tickets) * 100)
+
+        movie_refund_stats = Movie.objects.annotate(
+            total_tickets=Count('session__ticket'),
+            cancelled_count=Count(
+                'session__ticket',
+                filter=Q(session__ticket__ticket_status='cancelled')
+            ),
+            refund_percent=Case(
+                When(total_tickets__gt=0, then=Count(
+                    'session__ticket',
+                    filter=Q(session__ticket__ticket_status='cancelled')
+                ) * 100.0 / F('total_tickets')),
+                default=0,
+                output_field=FloatField()
+            )
+        ).filter(
+            total_tickets__gt=0
+        ).order_by('-cancelled_count')[:10]
+
+        refund_stats = []
+        for movie in movie_refund_stats:
+            refund_stats.append({
+                'movie_id': movie.movie_id,
+                'title': movie.title,
+                'total_tickets': movie.total_tickets or 0,
+                'cancelled_tickets': movie.cancelled_count or 0,
+                'refund_percent': round(float(movie.refund_percent or 0), 2),
+            })
+
+        total_revenue = Ticket.objects.filter(
+            ticket_status='valid'
+        ).aggregate(
+            total=Sum('order__total_price')
+        )['total'] or 0
+
+        return Response({
+            'popular_movies': popular_movies_data,
+            'halls_occupancy': halls_data,
+            'refund_statistics': {
+                'total_tickets': total_tickets,
+                'valid_tickets': valid_tickets,
+                'cancelled_tickets': cancelled_tickets,
+                'refund_rate_percent': refund_rate,
+                'total_revenue': float(total_revenue),
+            },
+            'movie_refunds': refund_stats,
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
         )
